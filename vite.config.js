@@ -1,3 +1,3 @@
 export default {
-  base: '/kharis/',   // ← debe coincidir EXACTAMENTE con el nombre de tu repo en GitHub
+  base: '/Proyect2/',   // ← nombre exacto de tu repo en GitHub (respeta mayúsculas)
 }
