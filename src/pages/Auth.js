@@ -5,8 +5,8 @@ export function renderAuth() {
   document.getElementById('auth-screen').innerHTML = `
     <div class="auth-wrap">
       <div class="auth-hero">
-        <div class="auth-dove">🕊️</div>
-        <h1>Kharis</h1>
+        <div class="auth-dove">📋</div>
+        <h1>Pizarra Digital</h1>
         <div class="cong-name">Congregación Vista Grande</div>
       </div>
       <div class="auth-card">

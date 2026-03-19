@@ -14,9 +14,8 @@ export function renderShell(userData) {
 
     <header>
       <div class="brand">
-        <div class="brand-icon">🕊️</div>
         <div>
-          <div>Kharis</div>
+          <div>Pizarra Digital</div>
           <div class="brand-sub">Vista Grande</div>
         </div>
       </div>
