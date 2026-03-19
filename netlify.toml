@@ -2,6 +2,12 @@
   publish = "."
   functions = "netlify/functions"
 
+[functions]
+  node_bundler = "esbuild"
+
+[functions."extract-pdf"]
+  timeout = 26
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
