@@ -695,7 +695,7 @@ document.getElementById('btn-install')?.addEventListener('click', async () => {
   if (dPr) { dPr.prompt(); await dPr.userChoice; dPr = null }
   document.getElementById('install-bar')?.classList.remove('show')
 })
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/kharis/sw.js').catch(() => {})
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/Proyect2/sw.js').catch(() => {})
 
 // ── 15. Start ──────────────────────────────────────────────────
 window.__showAuth()
