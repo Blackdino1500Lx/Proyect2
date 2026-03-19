@@ -1,4 +1,4 @@
-import{g as t,a as r,N as a,c as b,t as f,f as $}from"./index-mJ3eJah2.js";async function x(l,v){l.innerHTML='<div class="page active" id="page-dash"><p style="color:var(--text3);font-size:.85rem">Cargando...</p></div>';const[o,c,m,p]=await Promise.all([t("meetings"),t("announcements"),t("assignments"),t("reports")]),g=r().users,h=r().groups,u=a.toISOString().split("T")[0],e=[...o].sort((s,i)=>s.date.localeCompare(i.date)).find(s=>s.date>=u),d=e?new Date(e.date+"T00:00:00"):null,n=m.find(s=>s.email===v.email&&s.week===b()),y=p.filter(s=>s.year===a.getFullYear());l.innerHTML=`<div class="page active" id="page-dash">
+import{g as t,a as r,N as a,c as b,t as f,f as $}from"./index-DYjI_oTA.js";import"https://esm.sh/@supabase/supabase-js@2";async function k(l,v){l.innerHTML='<div class="page active" id="page-dash"><p style="color:var(--text3);font-size:.85rem">Cargando...</p></div>';const[o,c,m,p]=await Promise.all([t("meetings"),t("announcements"),t("assignments"),t("reports")]),g=r().users,h=r().groups,u=a.toISOString().split("T")[0],e=[...o].sort((s,i)=>s.date.localeCompare(i.date)).find(s=>s.date>=u),d=e?new Date(e.date+"T00:00:00"):null,n=m.find(s=>s.email===v.email&&s.week===b()),y=p.filter(s=>s.year===a.getFullYear());l.innerHTML=`<div class="page active" id="page-dash">
 
     <!-- Texto del año – solo en dashboard -->
     <div style="background:linear-gradient(135deg,var(--sky-bg),var(--white));border:1.5px solid var(--border2);border-left:5px solid var(--sky);border-radius:var(--r);padding:1.1rem 1.4rem;margin-bottom:1.3rem;box-shadow:var(--shadow-sm)">
@@ -44,4 +44,4 @@ import{g as t,a as r,N as a,c as b,t as f,f as $}from"./index-mJ3eJah2.js";async
           </div>`).join("")||'<div class="empty"><span class="emic">📭</span><p>Sin anuncios</p></div>'}
       </div>
     </div>
-  </div>`}export{x as renderDashboard};
+  </div>`}export{k as renderDashboard};
