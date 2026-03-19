@@ -4,10 +4,21 @@ import { go } from '../utils/router.js'
 export function renderShell(userData) {
   const isAdmin = userData.role === 'admin'
 
+  const navItems = [
+    { page: 'dash',          icon: '🏠', label: 'Inicio' },
+    { page: 'meetings',      icon: '📅', label: 'Reuniones' },
+    { page: 'announcements', icon: '📢', label: 'Anuncios' },
+    { page: 'assignments',   icon: '📋', label: 'Asignaciones' },
+    { page: 'programs',      icon: '🗂️', label: 'Programas' },
+    { page: 'map',           icon: '🗺️', label: 'Predicación' },
+    { page: 'reports',       icon: '📊', label: 'Informes' },
+    ...(isAdmin ? [{ page: 'admin', icon: '⚙️', label: 'Admin' }] : [])
+  ]
+
   document.getElementById('app').innerHTML = `
     <div id="install-bar">
       <span>📲</span>
-      <p><strong>Instala Kharis</strong> en tu dispositivo para acceso sin conexión</p>
+      <p><strong>Instala la app</strong> para acceso rápido sin conexión</p>
       <button id="btn-install">Instalar</button>
       <button id="btn-close-install" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.1rem;margin-left:auto">✕</button>
     </div>
@@ -22,44 +33,50 @@ export function renderShell(userData) {
       <div class="hdr-right">
         <div class="user-pill">
           <div class="role-pip ${isAdmin ? 'admin' : ''}"></div>
-          <span>${userData.name || userData.email}</span>
-          ${userData.group ? `<span style="color:var(--text3);font-size:.72rem"> · ${userData.group.name || userData.group}</span>` : ''}
+          <span>${userData.name?.split(' ')[0] || userData.email}</span>
         </div>
         <button class="btn-out" id="btn-logout">Salir</button>
       </div>
     </header>
 
-    <nav>
-      <button class="nt active" data-page="dash"         ><span class="ic">🏠</span>Inicio</button>
-      <button class="nt"        data-page="meetings"      ><span class="ic">📅</span>Reuniones</button>
-      <button class="nt"        data-page="announcements" ><span class="ic">📢</span>Anuncios</button>
-      <button class="nt"        data-page="assignments"   ><span class="ic">📋</span>Asignaciones</button>
-      <button class="nt"        data-page="programs"      ><span class="ic">🗂️</span>Programas</button>
-      <button class="nt"        data-page="map"           ><span class="ic">🗺️</span>Predicación</button>
-      <button class="nt"        data-page="reports"       ><span class="ic">📊</span>Informes</button>
-      ${isAdmin ? `<button class="nt" data-page="admin"><span class="ic">⚙️</span>Admin</button>` : ''}
+    <!-- Top nav — solo visible en desktop -->
+    <nav id="top-nav">
+      ${navItems.map((n, i) => `
+        <button class="nt ${i === 0 ? 'active' : ''}" data-page="${n.page}">
+          <span class="ic">${n.icon}</span>${n.label}
+        </button>`).join('')}
     </nav>
 
-    <main id="main-content">
-      <!-- Las páginas se inyectan aquí -->
-    </main>`
+    <main id="main-content" style="padding-bottom:80px">
+      <!-- páginas aquí -->
+    </main>
 
-  // Nav click listeners
-  document.querySelectorAll('.nt').forEach(btn => {
+    <!-- Bottom nav — solo visible en móvil -->
+    <nav id="bottom-nav">
+      ${navItems.map((n, i) => `
+        <button class="bn ${i === 0 ? 'active' : ''}" data-page="${n.page}">
+          <span class="bn-icon">${n.icon}</span>
+          <span class="bn-label">${n.label}</span>
+        </button>`).join('')}
+    </nav>`
+
+  // Listeners en ambos navs
+  document.querySelectorAll('.nt, .bn').forEach(btn => {
     btn.addEventListener('click', () => {
       const page = btn.dataset.page
+      // Sincronizar ambos navs
+      document.querySelectorAll('.nt').forEach(b => b.classList.toggle('active', b.dataset.page === page))
+      document.querySelectorAll('.bn').forEach(b => b.classList.toggle('active', b.dataset.page === page))
       go(page)
       window.__loadPage(page)
     })
   })
 
-  // Logout
   document.getElementById('btn-logout').addEventListener('click', async () => {
     await logout()
     window.__showAuth()
   })
 
-  // Install PWA
   document.getElementById('btn-close-install').addEventListener('click', () => {
     document.getElementById('install-bar').classList.remove('show')
   })
