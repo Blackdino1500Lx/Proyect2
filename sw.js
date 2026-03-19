@@ -1,5 +1,5 @@
-const CACHE = 'kharis-v1'
-const STATIC = ['/Proyect2/', '/Proyect2/index.html', '/Proyect2/manifest.json']
+const CACHE = 'pizarra-v1'
+const STATIC = ['/', '/index.html', '/manifest.json']
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)).then(() => self.skipWaiting()))
@@ -10,7 +10,8 @@ self.addEventListener('activate', e => {
     .then(() => self.clients.claim()))
 })
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('supabase') || e.request.url.includes('googleapis') || e.request.url.includes('tile')) {
+  if (e.request.url.includes('supabase') || e.request.url.includes('googleapis') ||
+      e.request.url.includes('tile') || e.request.url.includes('netlify/functions')) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)))
     return
   }
