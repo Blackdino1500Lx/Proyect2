@@ -105,21 +105,23 @@ Reglas importantes:
       })
     })
 
+    const responseText = await response.text()
+    console.log('Claude API status:', response.status)
+    console.log('Claude API response:', responseText.slice(0, 500))
+
     if (!response.ok) {
-      const err = await response.text()
       return {
         statusCode: response.status,
-        body: JSON.stringify({ error: `Error de Claude API: ${response.status}`, detail: err })
+        body: JSON.stringify({ error: `Error de Claude API: ${response.status}`, detail: responseText })
       }
     }
 
-    const data = await response.json()
+    const data = JSON.parse(responseText)
     const text = (data.content?.[0]?.text || '')
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim()
 
-    // Validar que sea JSON válido
     JSON.parse(text)
 
     return {
@@ -129,6 +131,7 @@ Reglas importantes:
     }
 
   } catch (err) {
+    console.log('Function error:', err.message)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message || 'Error interno del servidor' })
