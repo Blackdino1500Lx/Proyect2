@@ -39,7 +39,11 @@ export async function register(name, email, password) {
     email, password, options: { data: { name } }
   })
   if (error) throw error
-  await supabase.from('users').insert({ id: data.user.id, name, email, role: 'user' })
+  // Upsert por si el trigger ya creó el perfil sin nombre
+  await supabase.from('users').upsert(
+    { id: data.user.id, name, email, role: 'user' },
+    { onConflict: 'id' }
+  )
 }
 
 export async function logout() {
