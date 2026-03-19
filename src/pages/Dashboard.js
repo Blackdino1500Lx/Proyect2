@@ -7,6 +7,7 @@ import { typeLabel, formatDateShort } from '../utils/helpers.js'
 export async function renderDashboard(container, currentUser) {
   container.innerHTML = `<div class="page active" id="page-dash"><p style="color:var(--text3);font-size:.85rem">Cargando...</p></div>`
 
+  const isAdmin = currentUser?.role === 'admin'
   const [meetings, anns, assignments, reports] = await Promise.all([
     get('meetings'), get('announcements'), get('assignments'), get('reports')
   ])
@@ -40,12 +41,17 @@ export async function renderDashboard(container, currentUser) {
       <span class="section-sub">${NOW.toLocaleDateString('es',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</span>
     </div>
 
+    ${isAdmin ? `
     <div class="g4" style="margin-bottom:1.3rem">
       <div class="stat"><div class="stat-icon">👥</div><div><div class="stat-val">${users.length}</div><div class="stat-lbl">Publicadores</div></div></div>
       <div class="stat"><div class="stat-icon">👨‍👩‍👧</div><div><div class="stat-val">${groups.length}</div><div class="stat-lbl">Grupos</div></div></div>
       <div class="stat"><div class="stat-icon">📅</div><div><div class="stat-val">${meetings.filter(m=>{const md=new Date(m.date);return md.getFullYear()===NOW.getFullYear()&&md.getMonth()===NOW.getMonth()}).length}</div><div class="stat-lbl">Reuniones este mes</div></div></div>
       <div class="stat"><div class="stat-icon">📊</div><div><div class="stat-val">${yearReps.length}</div><div class="stat-lbl">Informes este año</div></div></div>
-    </div>
+    </div>` : `
+    <div class="g2" style="margin-bottom:1.3rem">
+      <div class="stat"><div class="stat-icon">📅</div><div><div class="stat-val">${meetings.filter(m=>{const md=new Date(m.date);return md.getFullYear()===NOW.getFullYear()&&md.getMonth()===NOW.getMonth()}).length}</div><div class="stat-lbl">Reuniones este mes</div></div></div>
+      <div class="stat"><div class="stat-icon">📊</div><div><div class="stat-val">${yearReps.length}</div><div class="stat-lbl">Mis informes este año</div></div></div>
+    </div>`}
 
     <div class="g2">
       <div class="card">
