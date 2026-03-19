@@ -1,3 +1,9 @@
 export default {
-  base: '/Proyect2/',   // ← nombre exacto de tu repo en GitHub (respeta mayúsculas)
+  base: '/Proyect2/',
+  build: {
+    rollupOptions: {
+      external: (id) => id.startsWith('https://')
+    },
+    target: 'esnext'
+  }
 }
