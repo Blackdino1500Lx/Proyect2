@@ -71,61 +71,8 @@ async function loadDash(container) {
 
 // ── 7. MEETINGS ────────────────────────────────────────────────
 async function loadMeetings(container) {
-  allMeetings = await get('meetings')
-  renderMeetings(container)
-}
-
-function renderMeetings(container) {
-  const admin = CU?.role === 'admin'
-  let list = [...allMeetings].sort((a,b) => a.date.localeCompare(b.date))
-  if (currentMeetFilter !== 'all') list = list.filter(m => m.type === currentMeetFilter)
-
-  container.innerHTML = `<div class="page active" id="page-meetings">
-    <div class="section-hd"><h2 class="section-title">Reuniones</h2></div>
-    <div class="meet-type-tabs">
-      <button class="mtt ${currentMeetFilter==='all'?'active':''}"     id="mf-all">Todas</button>
-      <button class="mtt ${currentMeetFilter==='midweek'?'active':''}" id="mf-mid">Entre Semana</button>
-      <button class="mtt ${currentMeetFilter==='weekend'?'active':''}" id="mf-wk">Fin de Semana</button>
-      <button class="mtt ${currentMeetFilter==='special'?'active':''}" id="mf-sp">Especiales</button>
-    </div>
-    <div id="meet-items">
-      ${list.map(m => {
-        const d = new Date(m.date + 'T00:00:00')
-        return `<div class="card">
-          <div class="meeting-item">
-            <div class="meet-date"><div class="meet-day">${d.getDate()}</div><div class="meet-mon">${d.toLocaleDateString('es',{month:'short'}).toUpperCase()}</div></div>
-            <div class="meet-body" style="flex:1">
-              <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
-                <h4>${m.title}</h4>
-                ${admin ? `<button class="btn-sm danger" data-del-meet="${m.id}">Eliminar</button>` : ''}
-              </div>
-              <p>${m.time} · ${formatDate(m.date)}</p>
-              <p style="margin-top:.3rem;white-space:pre-line;font-size:.81rem;color:var(--text2)">${m.description||''}</p>
-              <div class="meet-tags"><span class="badge ${typeBadge(m.type)}">${typeLabel(m.type)}</span></div>
-            </div>
-          </div>
-        </div>`
-      }).join('') || '<div class="empty"><span class="emic">📅</span><p>Sin reuniones en esta categoría</p></div>'}
-    </div>
-  </div>`
-
-  // Filter tabs
-  ;[['mf-all','all'],['mf-mid','midweek'],['mf-wk','weekend'],['mf-sp','special']].forEach(([id, type]) => {
-    document.getElementById(id)?.addEventListener('click', () => {
-      currentMeetFilter = type
-      renderMeetings(container)
-    })
-  })
-
-  // Delete buttons
-  container.querySelectorAll('[data-del-meet]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('¿Eliminar esta reunión?')) return
-      await del('meetings', btn.dataset.delMeet)
-      toast('Eliminado', 'Reunión eliminada')
-      await loadMeetings(container)
-    })
-  })
+  const { renderMeetings } = await import('./pages/Meetings.js')
+  renderMeetings(container, CU)
 }
 
 // ── 8. ANNOUNCEMENTS ───────────────────────────────────────────
