@@ -15,72 +15,21 @@ function loadMeetings() {
 
 // ── Claude API extraction ────────────────────────────────────
 async function extractPDFWithClaude(base64PDF) {
-  const prompt = `Eres un asistente que extrae información de la "Guía de Actividades para la Reunión Vida y Ministerio Cristianos".
-
-Analiza este PDF y extrae TODAS las semanas. Devuelve SOLO un JSON con esta estructura, sin texto adicional:
-
-{
-  "weeks": [
-    {
-      "id": "semana-1",
-      "dateRange": "6-12 DE JULIO",
-      "bibleReading": "JEREMÍAS 13-15",
-      "openingSong": "123",
-      "midSong": "49",
-      "closingSong": "61",
-      "sections": [
-        {
-          "name": "TESOROS DE LA BIBLIA",
-          "icon": "💎",
-          "items": [
-            { "number": 1, "title": "Jehová merece que le obedezcamos", "duration": 10, "type": "talk", "assignedTo": "" },
-            { "number": 2, "title": "Busquemos perlas escondidas", "duration": 10, "type": "discussion", "assignedTo": "" },
-            { "number": 3, "title": "Lectura de la Biblia (Jer 13:1-14)", "duration": 4, "type": "reading", "assignedTo": "" }
-          ]
-        },
-        {
-          "name": "SEAMOS MEJORES MAESTROS",
-          "icon": "📖",
-          "items": [
-            { "number": 4, "title": "Empiece conversaciones", "duration": 3, "type": "demo", "assignedTo": "" },
-            { "number": 5, "title": "Haga revisitas", "duration": 4, "type": "demo", "assignedTo": "" },
-            { "number": 6, "title": "Discurso", "duration": 5, "type": "talk", "assignedTo": "" }
-          ]
-        },
-        {
-          "name": "NUESTRA VIDA CRISTIANA",
-          "icon": "🏠",
-          "items": [
-            { "number": 7, "title": "Título del tema de vida cristiana", "duration": 15, "type": "discussion", "assignedTo": "" },
-            { "number": 8, "title": "Estudio bíblico de la congregación", "duration": 30, "type": "study", "assignedTo": "" }
-          ]
-        }
-      ]
-    }
-  ]
-}
-
-Extrae TODAS las semanas. assignedTo siempre "". Solo JSON, sin bloques de código ni explicaciones.`
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  // Llama a la Netlify Function (proxy seguro — la API key vive en el servidor)
+  const res = await fetch('/.netlify/functions/extract-pdf', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64PDF } },
-          { type: 'text', text: prompt }
-        ]
-      }]
-    })
+    body: JSON.stringify({ pdfBase64: base64PDF })
   })
-  if (!res.ok) throw new Error(`Error API: ${res.status}`)
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `Error ${res.status}` }))
+    throw new Error(err.error || `Error del servidor: ${res.status}`)
+  }
+
   const data = await res.json()
-  const text = (data.content?.[0]?.text || '').replace(/```json\n?/g,'').replace(/```\n?/g,'').trim()
-  return JSON.parse(text)
+  if (!data?.weeks) throw new Error('Respuesta inesperada del servidor')
+  return data
 }
 
 // ── Render ────────────────────────────────────────────────────

@@ -1,9 +1,9 @@
 export default {
-  base: '/Proyect2/',
+  base: '/',
   build: {
+    target: 'esnext',
     rollupOptions: {
       external: (id) => id.startsWith('https://')
-    },
-    target: 'esnext'
+    }
   }
 }

@@ -1,15 +1,15 @@
 {
-  "name": "Kharis – Congregación Vista Grande",
-  "short_name": "Kharis",
+  "name": "Pizarra Digital – Vista Grande",
+  "short_name": "Pizarra",
   "description": "Sistema digital de gestión para la congregación",
-  "start_url": "/Proyect2/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#f5f9fe",
   "theme_color": "#4a90d9",
   "orientation": "portrait-primary",
   "lang": "es",
   "icons": [
-    { "src": "https://placehold.co/192x192/4a90d9/ffffff?text=K", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "https://placehold.co/512x512/4a90d9/ffffff?text=K", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "https://placehold.co/192x192/4a90d9/ffffff?text=P", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "https://placehold.co/512x512/4a90d9/ffffff?text=P", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
