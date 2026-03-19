@@ -63,13 +63,40 @@ header{position:sticky;top:0;z-index:200;background:rgba(255,255,255,.95);backdr
 .btn-out{background:transparent;border:1.5px solid var(--border2);border-radius:8px;color:var(--text2);padding:.28rem .6rem;cursor:pointer;font-size:.75rem;font-family:var(--sans);font-weight:600;transition:all .2s;white-space:nowrap}
 .btn-out:active{background:var(--rose-bg);color:var(--rose)}
 
-/* Nav — scroll horizontal en móvil */
-nav{display:flex;overflow-x:auto;scrollbar-width:none;gap:.15rem;padding:.5rem .75rem;background:var(--white);border-bottom:1.5px solid var(--border);-webkit-overflow-scrolling:touch}
-nav::-webkit-scrollbar{display:none}
+/* ── Top nav (desktop) ── */
+#top-nav{display:flex;overflow-x:auto;scrollbar-width:none;gap:.15rem;padding:.5rem .75rem;background:var(--white);border-bottom:1.5px solid var(--border);-webkit-overflow-scrolling:touch}
+#top-nav::-webkit-scrollbar{display:none}
 .nt{flex-shrink:0;display:flex;align-items:center;gap:.32rem;padding:.42rem .8rem;border:none;background:transparent;color:var(--text2);border-radius:8px;cursor:pointer;font-family:var(--sans);font-size:.8rem;font-weight:600;transition:all .2s;white-space:nowrap;min-height:36px}
 .nt:active{background:var(--sky-bg)}
 .nt.active{background:var(--sky);color:white;box-shadow:0 2px 8px rgba(74,144,217,.3)}
 .nt .ic{font-size:.88rem}
+
+/* ── Bottom nav (móvil) ── */
+#bottom-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(20px);
+  border-top:1.5px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom,0);
+  box-shadow:0 -4px 20px rgba(74,144,217,.10);
+}
+.bn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:.15rem;padding:.5rem .2rem;border:none;background:transparent;
+  color:var(--text3);cursor:pointer;font-family:var(--sans);
+  transition:color .15s;min-height:54px;-webkit-tap-highlight-color:transparent;
+  position:relative;
+}
+.bn.active{color:var(--sky)}
+.bn.active .bn-icon{transform:scale(1.12)}
+.bn.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:24px;height:2.5px;background:var(--sky);border-radius:0 0 3px 3px}
+.bn-icon{font-size:1.3rem;transition:transform .15s;line-height:1}
+.bn-label{font-size:.58rem;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+
+@media(max-width:640px){
+  #top-nav{display:none}
+  #bottom-nav{display:flex}
+  main{padding-bottom:calc(70px + env(safe-area-inset-bottom,0)) !important}
+}
 
 #install-bar{display:none;align-items:center;gap:.75rem;padding:.6rem 1rem;flex-wrap:wrap;background:linear-gradient(90deg,var(--sky-bg),var(--white));border-bottom:1px solid var(--border);font-size:.82rem;color:var(--text2)}
 #install-bar.show{display:flex}
