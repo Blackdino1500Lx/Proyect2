@@ -26,13 +26,12 @@ export async function handler(event) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Falta el PDF' }) }
   }
 
-  const prompt = `Extrae TODAS las semanas de esta Guía de Actividades para la Reunión Vida y Ministerio Cristianos.
+  const prompt = `Extrae TODAS las semanas de esta Guía de Actividades para la Reunión.
 
-Devuelve SOLO este JSON sin texto adicional:
+Devuelve SOLO JSON con esta estructura (sin texto extra, sin bloques de código):
+{"weeks":[{"id":"s1","dateRange":"6-12 DE JULIO","bibleReading":"JEREMÍAS 13-15","openingSong":"123","midSong":"49","closingSong":"61","sections":[{"name":"TESOROS DE LA BIBLIA","icon":"💎","items":[{"number":1,"title":"título","duration":10,"type":"talk","assignedTo":""},{"number":2,"title":"Busquemos perlas escondidas","duration":10,"type":"discussion","assignedTo":""},{"number":3,"title":"Lectura (cita bíblica)","duration":4,"type":"reading","assignedTo":""}]},{"name":"SEAMOS MEJORES MAESTROS","icon":"📖","items":[{"number":4,"title":"título","duration":3,"type":"demo","assignedTo":""},{"number":5,"title":"título","duration":4,"type":"demo","assignedTo":""},{"number":6,"title":"título","duration":5,"type":"talk","assignedTo":""}]},{"name":"NUESTRA VIDA CRISTIANA","icon":"🏠","items":[{"number":7,"title":"título","duration":15,"type":"discussion","assignedTo":""},{"number":8,"title":"Estudio bíblico de la congregación","duration":30,"type":"study","assignedTo":""}]}]}]}
 
-{"weeks":[{"id":"s1","dateRange":"6-12 DE JULIO","bibleReading":"JEREMÍAS 13-15","openingSong":"123","midSong":"49","closingSong":"61","sections":[{"name":"TESOROS DE LA BIBLIA","icon":"💎","items":[{"number":1,"title":"Título exacto del tema","duration":10,"type":"talk","assignedTo":""},{"number":2,"title":"Busquemos perlas escondidas","duration":10,"type":"discussion","assignedTo":""},{"number":3,"title":"Lectura de la Biblia (cita)","duration":4,"type":"reading","assignedTo":""}]},{"name":"SEAMOS MEJORES MAESTROS","icon":"📖","items":[{"number":4,"title":"título exacto","duration":3,"type":"demo","assignedTo":""},{"number":5,"title":"título exacto","duration":4,"type":"demo","assignedTo":""},{"number":6,"title":"título exacto","duration":5,"type":"talk","assignedTo":""}]},{"name":"NUESTRA VIDA CRISTIANA","icon":"🏠","items":[{"number":7,"title":"título exacto","duration":15,"type":"discussion","assignedTo":""},{"number":8,"title":"Estudio bíblico de la congregación","duration":30,"type":"study","assignedTo":""}]}]}]}
-
-Reglas: assignedTo siempre "". Extrae TODAS las semanas. Solo JSON puro.`
+IMPORTANTE: assignedTo siempre "". Títulos cortos (máx 60 caracteres). TODAS las semanas.`
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -45,7 +44,7 @@ Reglas: assignedTo siempre "". Extrae TODAS las semanas. Solo JSON puro.`
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
+        max_tokens: 6000,
         messages: [{
           role: 'user',
           content: [
