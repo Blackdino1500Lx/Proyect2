@@ -71,7 +71,7 @@ async function loadDash(container) {
 
 // ── 7. MEETINGS ────────────────────────────────────────────────
 async function loadMeetings(container) {
-  const { renderMeetings } = await import('./pages/Meetings.js')
+  const { renderMeetings } = await import('./pages/Meetings.js?v=' + Date.now())
   renderMeetings(container, CU)
 }
 
@@ -209,26 +209,78 @@ async function loadCleaning(container) {
 async function loadWork(container) {
   const list = await get('workprogram')
   const admin = CU?.role === 'admin'
+
+  // Separar mantenimiento de servicio
+  const service = list.filter(w => w.title?.includes('Programa de servicio'))
+  const maint   = list.filter(w => !w.title?.includes('Programa de servicio'))
+
+  const renderServiceCard = (w) => {
+    let roles = {}
+    try { roles = JSON.parse(w.notes || '{}') } catch {}
+    const d = new Date(w.date + 'T00:00:00')
+    const roleItems = [
+      { icon:'🎙️', label:'Sonido',              val: roles.sound },
+      { icon:'🎤', label:'Micrófonos',           val: roles.mic },
+      { icon:'🚪', label:'Acomodadores',         val: roles.usher },
+      { icon:'📹', label:'Zoom / Transmisión',   val: roles.zoom },
+      { icon:'📖', label:'Indicador plataforma', val: roles.platform },
+      { icon:'🔧', label:'Otro',                 val: roles.other },
+    ].filter(r => r.val)
+
+    return `<div class="prog-card">
+      <div class="prog-icon">🎙️</div>
+      <div class="prog-body" style="flex:1">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+          <h4>${w.title}</h4>
+          ${admin ? `<button class="btn-sm danger" data-del-wk="${w.id}">Eliminar</button>` : ''}
+        </div>
+        <div class="prog-meta">📅 ${d.toLocaleDateString('es',{weekday:'long',month:'long',day:'numeric'})}</div>
+        <div style="margin-top:.5rem;display:flex;flex-direction:column;gap:.2rem">
+          ${roleItems.map(r => `<div style="font-size:.81rem;color:var(--text2)"><strong>${r.icon} ${r.label}:</strong> ${r.val}</div>`).join('')}
+        </div>
+      </div>
+    </div>`
+  }
+
+  const renderMaintCard = (w) => {
+    const notes = w.notes?.replace('[MANTENIMIENTO] ','') || ''
+    const d = new Date(w.date + 'T00:00:00')
+    return `<div class="prog-card">
+      <div class="prog-icon">🔧</div>
+      <div class="prog-body" style="flex:1">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+          <h4>${notes.split('—')[0]?.trim() || 'Mantenimiento'}</h4>
+          ${admin ? `<button class="btn-sm danger" data-del-wk="${w.id}">Eliminar</button>` : ''}
+        </div>
+        <p>${notes.split('—')[1]?.trim() || ''}</p>
+        <div class="prog-meta">👷 ${w.who || '—'} &nbsp;·&nbsp; 📅 ${d.toLocaleDateString('es',{weekday:'long',month:'long',day:'numeric'})}</div>
+      </div>
+    </div>`
+  }
+
   container.innerHTML = `<div class="page active" id="page-workprogram">
     <div class="section-hd">
       <div style="display:flex;align-items:center;gap:.7rem">
         <button class="btn-sm" id="back-programs2">← Programas</button>
-        <h2 class="section-title">🔧 Programa de trabajo</h2>
+        <h2 class="section-title">Programa de Trabajo</h2>
       </div>
     </div>
-    ${list.map(w => {
-      return `<div class="prog-card">
-        <div class="prog-icon">🔧</div>
-        <div class="prog-body" style="flex:1">
-          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
-            <h4>${w.title}</h4>
-            ${admin ? `<button class="btn-sm danger" data-del-wk="${w.id}">Eliminar</button>` : ''}
-          </div>
-          <p>${w.notes || ''}</p>
-          <div class="prog-meta">👷 ${w.who || '—'} &nbsp;·&nbsp; 📅 ${formatDate(w.date)}</div>
-        </div>
-      </div>`
-    }).join('') || '<div class="empty"><span class="emic">🔧</span><p>Sin trabajos programados</p></div>'}
+
+    ${service.length > 0 ? `
+    <div style="margin-bottom:.5rem">
+      <div style="font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem">🎙️ Programa de Servicio</div>
+      ${service.map(renderServiceCard).join('')}
+    </div>` : ''}
+
+    ${maint.length > 0 ? `
+    <div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem">🔧 Mantenimiento</div>
+      ${maint.map(renderMaintCard).join('')}
+    </div>` : ''}
+
+    ${service.length === 0 && maint.length === 0
+      ? '<div class="empty"><span class="emic">🔧</span><p>Sin programas publicados</p></div>'
+      : ''}
   </div>`
 
   document.getElementById('back-programs2').addEventListener('click', () => { go('programs'); loadPage('programs') })
@@ -236,7 +288,7 @@ async function loadWork(container) {
     btn.addEventListener('click', async () => {
       if (!confirm('¿Eliminar?')) return
       await del('workprogram', btn.dataset.delWk)
-      toast('Eliminado', 'Trabajo eliminado')
+      toast('Eliminado', 'Eliminado')
       loadWork(container)
     })
   })
@@ -445,17 +497,15 @@ async function loadAdmin(container) {
       </div>
     </div>
 
-    <!-- Nueva Reunión -->
-    <div class="card">
-      <div class="card-hd"><span class="card-title">📅 Nueva Reunión</span></div>
-      <div class="g2">
-        <div class="fg"><label>Título</label><input type="text" id="m-title" placeholder="Ej: Reunión entre semana"/></div>
-        <div class="fg"><label>Fecha</label><input type="date" id="m-date"/></div>
-        <div class="fg"><label>Hora</label><input type="time" id="m-time" value="19:00"/></div>
-        <div class="fg"><label>Tipo</label><select id="m-type"><option value="midweek">Entre semana</option><option value="weekend">Fin de semana</option><option value="special">Especial</option></select></div>
+    <!-- Info reuniones -->
+    <div class="card" style="background:var(--sky-bg);border-color:var(--border2)">
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <span style="font-size:1.5rem">📅</span>
+        <div>
+          <div style="font-weight:700;color:var(--sky3);font-size:.93rem">Reuniones y Asignaciones</div>
+          <div style="font-size:.81rem;color:var(--text2);margin-top:.2rem">Las reuniones se gestionan subiendo la Guía de Actividades en la sección <strong>Reuniones</strong>. Las asignaciones se hacen directamente en cada semana.</div>
+        </div>
       </div>
-      <div class="fg"><label>Programa</label><textarea id="m-desc" placeholder="Temas, discursos..."></textarea></div>
-      <button class="btn-action" id="btn-add-meet">Guardar reunión</button>
     </div>
 
     <!-- Nuevo Anuncio -->
@@ -469,34 +519,46 @@ async function loadAdmin(container) {
       <button class="btn-action" id="btn-add-ann">Publicar</button>
     </div>
 
-    <!-- Nueva Asignación -->
-    <div class="card">
-      <div class="card-hd"><span class="card-title">📋 Nueva Asignación</span></div>
-      <div class="g2">
-        <div class="fg"><label>Nombre</label><input type="text" id="as-name" placeholder="Nombre completo"/></div>
-        <div class="fg"><label>Correo</label><input type="email" id="as-email" placeholder="correo@ejemplo.com"/></div>
-        <div class="fg"><label>Tarea</label><input type="text" id="as-role" placeholder="Ej: Discurso, Oración..."/></div>
-        <div class="fg"><label>Semana</label><input type="week" id="as-week" value="${curWeek()}"/></div>
-      </div>
-      <button class="btn-action" id="btn-add-as">Asignar</button>
-    </div>
-
     <!-- Limpieza -->
     <div class="card">
-      <div class="card-hd"><span class="card-title">🧹 Publicar Limpieza</span></div>
+      <div class="card-hd"><span class="card-title">🧹 Programa de Limpieza</span></div>
       <div class="g2">
         <div class="fg"><label>Responsable(s)</label><input type="text" id="cl-who" placeholder="Familia López..."/></div>
         <div class="fg"><label>Fecha</label><input type="date" id="cl-date"/></div>
       </div>
-      <div class="fg"><label>Área</label><textarea id="cl-notes" placeholder="Salón, baños..." style="min-height:60px"></textarea></div>
+      <div class="fg"><label>Área / Detalle</label><textarea id="cl-notes" placeholder="Salón, baños, jardín..." style="min-height:60px"></textarea></div>
       <button class="btn-action" id="btn-add-cl">Publicar turno</button>
     </div>
 
-    <!-- Trabajo -->
+    <!-- Programa de Servicio (roles de la reunión) -->
     <div class="card">
-      <div class="card-hd"><span class="card-title">🔧 Publicar Trabajo</span></div>
+      <div class="card-hd"><span class="card-title">🎙️ Programa de Servicio</span></div>
+      <p style="font-size:.81rem;color:var(--text2);margin-bottom:.9rem">Roles de servicio para la reunión: acomodadores, micrófonos, sonido, etc.</p>
       <div class="g2">
-        <div class="fg"><label>Trabajo</label><input type="text" id="wk-title" placeholder="Pintura, cambio de focos..."/></div>
+        <div class="fg"><label>Fecha de la reunión</label><input type="date" id="sv-date"/></div>
+        <div class="fg"><label>Tipo de reunión</label>
+          <select id="sv-type">
+            <option value="midweek">Entre semana</option>
+            <option value="weekend">Fin de semana</option>
+          </select>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label>🎙️ Sonido</label><input type="text" id="sv-sound" placeholder="Nombre..."/></div>
+        <div class="fg"><label>🎤 Micrófonos</label><input type="text" id="sv-mic" placeholder="Nombre(s)..."/></div>
+        <div class="fg"><label>🚪 Acomodador(es)</label><input type="text" id="sv-usher" placeholder="Nombre(s)..."/></div>
+        <div class="fg"><label>📹 Zoom / Transmisión</label><input type="text" id="sv-zoom" placeholder="Nombre..."/></div>
+        <div class="fg"><label>📖 Indicador de plataforma</label><input type="text" id="sv-platform" placeholder="Nombre..."/></div>
+        <div class="fg"><label>🔧 Otro rol</label><input type="text" id="sv-other" placeholder="Rol: Nombre..."/></div>
+      </div>
+      <button class="btn-action" id="btn-add-sv">Publicar programa</button>
+    </div>
+
+    <!-- Mantenimiento -->
+    <div class="card">
+      <div class="card-hd"><span class="card-title">🔧 Mantenimiento del Salón</span></div>
+      <div class="g2">
+        <div class="fg"><label>Trabajo a realizar</label><input type="text" id="wk-title" placeholder="Pintura, cambio de focos..."/></div>
         <div class="fg"><label>Fecha</label><input type="date" id="wk-date"/></div>
         <div class="fg"><label>Responsable(s)</label><input type="text" id="wk-who" placeholder="Grupo Norte..."/></div>
       </div>
@@ -537,7 +599,7 @@ async function loadAdmin(container) {
     const name    = document.getElementById('grp-name').value.trim()
     const captain = document.getElementById('grp-captain').value.trim()
     if (!name) { toast('Error', 'Ingresa un nombre', true); return }
-    if (DEMO_MODE) { getDS().groups.push({ id:'g'+Date.now(), name, captain }); require('./services/db.js').saveDS() }
+    if (DEMO_MODE) { getDS().groups.push({ id:'g'+Date.now(), name, captain }); const { saveDS } = await import('./services/db.js'); saveDS() }
     toast('Grupo creado', name)
     document.getElementById('grp-name').value = ''
     document.getElementById('grp-captain').value = ''
@@ -552,19 +614,6 @@ async function loadAdmin(container) {
     })
   })
 
-  document.getElementById('btn-add-meet').addEventListener('click', async () => {
-    const title = document.getElementById('m-title').value.trim()
-    const date  = document.getElementById('m-date').value
-    const time  = document.getElementById('m-time').value
-    const type  = document.getElementById('m-type').value
-    const desc  = document.getElementById('m-desc').value.trim()
-    if (!title || !date) { toast('Error', 'Completa título y fecha', true); return }
-    await ins('meetings', { title, date, time, type, description: desc })
-    toast('Reunión guardada', `${title} · ${date}`)
-    ;['m-title','m-desc'].forEach(id => document.getElementById(id).value = '')
-    loadAdmin(container)
-  })
-
   document.getElementById('btn-add-ann').addEventListener('click', async () => {
     const title    = document.getElementById('an-title').value.trim()
     const body     = document.getElementById('an-body').value.trim()
@@ -573,18 +622,6 @@ async function loadAdmin(container) {
     await ins('announcements', { title, body, priority })
     toast('Anuncio publicado', title)
     ;['an-title','an-body'].forEach(id => document.getElementById(id).value = '')
-    loadAdmin(container)
-  })
-
-  document.getElementById('btn-add-as').addEventListener('click', async () => {
-    const name  = document.getElementById('as-name').value.trim()
-    const email = document.getElementById('as-email').value.trim().toLowerCase()
-    const role  = document.getElementById('as-role').value.trim()
-    const week  = document.getElementById('as-week').value
-    if (!name || !role || !week) { toast('Error', 'Completa los campos requeridos', true); return }
-    await ins('assignments', { name, email, role, week })
-    toast('Asignación guardada', `${name} – ${role}`)
-    ;['as-name','as-email','as-role'].forEach(id => document.getElementById(id).value = '')
     loadAdmin(container)
   })
 
@@ -600,13 +637,32 @@ async function loadAdmin(container) {
     loadAdmin(container)
   })
 
+  document.getElementById('btn-add-sv').addEventListener('click', async () => {
+    const date     = document.getElementById('sv-date').value
+    const type     = document.getElementById('sv-type').value
+    const sound    = document.getElementById('sv-sound').value.trim()
+    const mic      = document.getElementById('sv-mic').value.trim()
+    const usher    = document.getElementById('sv-usher').value.trim()
+    const zoom     = document.getElementById('sv-zoom').value.trim()
+    const platform = document.getElementById('sv-platform').value.trim()
+    const other    = document.getElementById('sv-other').value.trim()
+    if (!date) { toast('Error', 'Selecciona la fecha', true); return }
+    await ins('workprogram', {
+      title: `Programa de servicio – ${type === 'midweek' ? 'Entre semana' : 'Fin de semana'}`,
+      date, who: sound, notes: JSON.stringify({ sound, mic, usher, zoom, platform, other })
+    })
+    toast('Programa publicado', `Servicio del ${date}`)
+    ;['sv-date','sv-sound','sv-mic','sv-usher','sv-zoom','sv-platform','sv-other'].forEach(id => document.getElementById(id).value = '')
+    loadAdmin(container)
+  })
+
   document.getElementById('btn-add-wk').addEventListener('click', async () => {
     const title = document.getElementById('wk-title').value.trim()
     const date  = document.getElementById('wk-date').value
     const who   = document.getElementById('wk-who').value.trim()
     const notes = document.getElementById('wk-notes').value.trim()
     if (!title || !date) { toast('Error', 'Completa el trabajo y la fecha', true); return }
-    await ins('workprogram', { title, date, who, notes })
+    await ins('cleaning', { who, date: date, notes: `[MANTENIMIENTO] ${title} — ${notes}` })
     toast('Trabajo publicado', title)
     ;['wk-title','wk-who','wk-notes'].forEach(id => document.getElementById(id).value = '')
     document.getElementById('wk-date').value = ''
