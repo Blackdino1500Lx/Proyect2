@@ -5,6 +5,7 @@ import { renderShell }      from './pages/Shell.js'
 import { renderDashboard }  from './pages/Dashboard.js'
 import { renderMeetings }   from './pages/Meetings.js'
 import { renderWeekend }    from './pages/Weekend.js'
+import { renderField }      from './pages/Field.js'
 import { go }               from './utils/router.js'
 import { DEMO_MODE, supabase } from './config/supabase.js'
 import { get, getDS, ins, del, upsertReport, getUsers, getGroups, setUserGroup, setUserRole } from './services/db.js'
@@ -131,13 +132,13 @@ async function loadProgramsPage(container) {
   await switchTab(tab)
 }
 
-// ── 9. MAP PAGE (mapa + informe propio) ────────────────────────
+// ── 9. MAP/FIELD PAGE (territorios + informe propio) ──────────
 async function loadMapPage(container) {
-  const tab = window.__mapTab || 'map'
+  const tab = window.__mapTab || 'field'
   container.innerHTML = `<div class="page active" id="page-map-page">
     <div class="section-hd"><h2 class="section-title">Predicación</h2></div>
     <div class="meet-type-tabs" style="margin-bottom:1rem">
-      <button class="mtt ${tab==='map'?'active':''}"     id="maptab-map">🗺️ Territorios</button>
+      <button class="mtt ${tab==='field'?'active':''}"   id="maptab-field">🗺️ Territorios</button>
       <button class="mtt ${tab==='report'?'active':''}"  id="maptab-report">📊 Mi Informe</button>
     </div>
     <div id="map-tab-content"></div>
@@ -149,11 +150,11 @@ async function loadMapPage(container) {
     window.__mapTab = t
     document.querySelectorAll('.mtt').forEach(b => b.classList.remove('active'))
     document.getElementById('maptab-' + t)?.classList.add('active')
-    if (t === 'map')    loadMap(tabContent)
+    if (t === 'field')  await renderField(tabContent, CU)
     if (t === 'report') await loadReports(tabContent)
   }
 
-  document.getElementById('maptab-map')?.addEventListener('click',    () => switchTab('map'))
+  document.getElementById('maptab-field')?.addEventListener('click',  () => switchTab('field'))
   document.getElementById('maptab-report')?.addEventListener('click', () => switchTab('report'))
 
   await switchTab(tab)
