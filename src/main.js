@@ -636,7 +636,13 @@ async function loadAdmin(container) {
     const name    = document.getElementById('grp-name').value.trim()
     const captain = document.getElementById('grp-captain').value.trim()
     if (!name) { toast('Error', 'Ingresa un nombre', true); return }
-    if (DEMO_MODE) { getDS().groups.push({ id:'g'+Date.now(), name, captain }); const { saveDS } = await import('./services/db.js'); saveDS() }
+    if (DEMO_MODE) {
+      getDS().groups.push({ id:'g'+Date.now(), name, captain })
+      const { saveDS } = await import('./services/db.js'); saveDS()
+    } else {
+      const { error } = await supabase.from('groups').insert({ name, captain })
+      if (error) { toast('Error', error.message, true); return }
+    }
     toast('Grupo creado', name)
     document.getElementById('grp-name').value = ''
     document.getElementById('grp-captain').value = ''
@@ -646,7 +652,12 @@ async function loadAdmin(container) {
   container.querySelectorAll('[data-del-grp]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('¿Eliminar este grupo?')) return
-      if (DEMO_MODE) { getDS().groups = getDS().groups.filter(g => g.id !== btn.dataset.delGrp); const { saveDS } = await import('./services/db.js'); saveDS() }
+      if (DEMO_MODE) {
+        getDS().groups = getDS().groups.filter(g => g.id !== btn.dataset.delGrp)
+        const { saveDS } = await import('./services/db.js'); saveDS()
+      } else {
+        await supabase.from('groups').delete().eq('id', btn.dataset.delGrp)
+      }
       toast('Eliminado', 'Grupo eliminado'); loadAdmin(container)
     })
   })
