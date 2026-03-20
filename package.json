@@ -3,11 +3,7 @@
   "version": "1.0.0",
   "description": "Sistema digital de congregación Vista Grande",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "devDependencies": {
-    "vite": "^5.4.0"
+    "build": "mkdir -p dist && cp index.html dist/ && cp -r src dist/ && cp -r public/* dist/",
+    "dev": "npx serve ."
   }
 }

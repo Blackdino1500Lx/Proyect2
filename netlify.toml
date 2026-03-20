@@ -1,5 +1,6 @@
 [build]
-  publish = "."
+  command = "npm run build"
+  publish = "dist"
   functions = "netlify/functions"
 
 [functions]
@@ -10,12 +11,6 @@
 
 [functions."extract-watchtower"]
   timeout = 26
-
-[[redirects]]
-  from = "/src/*"
-  to = "/src/:splat"
-  status = 200
-  force = true
 
 [[redirects]]
   from = "/*"
