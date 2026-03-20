@@ -72,7 +72,7 @@ async function loadDash(container) {
 
 // ── 7. MEETINGS ────────────────────────────────────────────────
 async function loadMeetings(container) {
-  renderMeetings(container, CU)
+  await renderMeetings(container, CU)
 }
 
 // ── 8. ANNOUNCEMENTS ───────────────────────────────────────────
