@@ -9,8 +9,8 @@ export async function renderDashboard(container, currentUser) {
   const isAdmin = currentUser?.role === 'admin'
 
   // Cargar datos en paralelo
-  const [anns, reports] = await Promise.all([
-    get('announcements'), get('reports')
+  const [anns, reports, cleaning] = await Promise.all([
+    get('announcements'), get('reports'), get('cleaning')
   ])
 
   const users  = DEMO_MODE ? getDS().users  : (await supabase.from('users').select('*')).data || []
@@ -47,8 +47,16 @@ export async function renderDashboard(container, currentUser) {
     }
   }
 
-  // Próxima semana
-  const today = NOW.toISOString().split('T')[0]
+  // Buscar limpieza próxima del grupo del usuario
+  const userProfile = users.find(u => u.email === currentUser.email)
+  const userGroupId = userProfile?.group_id
+  const todayStr = NOW.toISOString().split('T')[0]
+  const nextCleaning = userGroupId
+    ? cleaning
+        .filter(c => c.group_id === userGroupId && c.date >= todayStr)
+        .sort((a,b) => a.date.localeCompare(b.date))[0]
+    : null
+
   const upcoming = weeks.length > 0 ? weeks[0] : null
   const yearReps = reports.filter(r => r.year === NOW.getFullYear())
 
@@ -65,6 +73,16 @@ export async function renderDashboard(container, currentUser) {
     <div class="notif show">
       <div class="notif-ico">🔔</div>
       <div><h3>${myAssignment.role}</h3><p>Tienes una participación asignada: ${myAssignment.week}</p></div>
+    </div>` : ''}
+
+    ${nextCleaning ? `
+    <div class="notif show" style="border-left-color:#2e9e6b;background:linear-gradient(135deg,#f0faf5,var(--white))">
+      <div class="notif-ico">🧹</div>
+      <div>
+        <h3>Tu grupo tiene limpieza</h3>
+        <p>${new Date(nextCleaning.date + 'T00:00:00').toLocaleDateString('es',{weekday:'long',month:'long',day:'numeric'})} · Encargado: ${nextCleaning.who}</p>
+        ${nextCleaning.notes ? `<p style="font-size:.78rem;color:var(--text3)">${nextCleaning.notes}</p>` : ''}
+      </div>
     </div>` : ''}
 
     <div class="section-hd">
