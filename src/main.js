@@ -3,6 +3,7 @@ import { initDemo }         from './services/auth.js'
 import { renderAuth }       from './pages/Auth.js'
 import { renderShell }      from './pages/Shell.js'
 import { renderDashboard }  from './pages/Dashboard.js'
+import { renderMeetings }   from './pages/Meetings.js'
 import { go }               from './utils/router.js'
 import { DEMO_MODE }        from './config/supabase.js'
 import { get, getDS, ins, del, upsertReport, getUsers, getGroups, setUserGroup, setUserRole } from './services/db.js'
@@ -71,7 +72,6 @@ async function loadDash(container) {
 
 // ── 7. MEETINGS ────────────────────────────────────────────────
 async function loadMeetings(container) {
-  const { renderMeetings } = await import('./pages/Meetings.js?v=' + Date.now())
   renderMeetings(container, CU)
 }
 
