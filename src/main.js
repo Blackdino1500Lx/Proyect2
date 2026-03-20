@@ -477,6 +477,18 @@ async function loadAdmin(container) {
   const users  = await getUsers()
   const groups = await getGroups()
 
+  // Helper para generar selects de usuarios
+  const brotherOpts = '<option value="">— Seleccionar —</option>' +
+    users.filter(u => u.baptized && u.gender !== 'sister')
+         .map(u => `<option value="${u.name}">${u.name}</option>`).join('')
+  const allOpts = '<option value="">— Seleccionar —</option>' +
+    users.map(u => `<option value="${u.name}">${u.name}</option>`).join('')
+
+  const brotherSel = (id, style='') =>
+    `<select id="${id}" style="width:100%;padding:.45rem .6rem;border:1.5px solid var(--border);border-radius:var(--r2);font-family:var(--sans);font-size:.9rem;background:var(--white);color:var(--text);${style}">${brotherOpts}</select>`
+  const allSel = (id, style='') =>
+    `<select id="${id}" style="width:100%;padding:.45rem .6rem;border:1.5px solid var(--border);border-radius:var(--r2);font-family:var(--sans);font-size:.9rem;background:var(--white);color:var(--text);${style}">${allOpts}</select>`
+
   container.innerHTML = `<div class="page active" id="page-admin">
     <div class="section-hd"><h2 class="section-title">Panel de Administración</h2></div>
     <div class="g3" style="margin-bottom:1.3rem">
@@ -489,8 +501,8 @@ async function loadAdmin(container) {
     <div class="card">
       <div class="card-hd"><span class="card-title">👨‍👩‍👧 Gestión de Grupos</span></div>
       <div class="g2" style="margin-bottom:.9rem">
-        <div class="fg"><label>Nombre</label><input type="text" id="grp-name" placeholder="Ej: Grupo Norte"/></div>
-        <div class="fg"><label>Responsable</label><input type="text" id="grp-captain" placeholder="Nombre"/></div>
+        <div class="fg"><label>Nombre del grupo</label><input type="text" id="grp-name" placeholder="Ej: Grupo Norte"/></div>
+        <div class="fg"><label>Responsable</label>${brotherSel('grp-captain')}</div>
       </div>
       <button class="btn-action" id="btn-add-group" style="margin-bottom:1rem">Crear grupo</button>
       <div id="groups-list">
@@ -531,14 +543,20 @@ async function loadAdmin(container) {
     <div class="card">
       <div class="card-hd"><span class="card-title">🧹 Programa de Limpieza</span></div>
       <div class="g2">
-        <div class="fg"><label>Responsable(s)</label><input type="text" id="cl-who" placeholder="Familia López..."/></div>
+        <div class="fg"><label>Grupo</label>
+          <select id="cl-group" style="width:100%;padding:.45rem .6rem;border:1.5px solid var(--border);border-radius:var(--r2);font-family:var(--sans);font-size:.9rem;background:var(--white);color:var(--text)">
+            <option value="">— Seleccionar grupo —</option>
+            ${groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg"><label>Encargado</label>${brotherSel('cl-captain')}</div>
         <div class="fg"><label>Fecha</label><input type="date" id="cl-date"/></div>
       </div>
       <div class="fg"><label>Área / Detalle</label><textarea id="cl-notes" placeholder="Salón, baños, jardín..." style="min-height:60px"></textarea></div>
       <button class="btn-action" id="btn-add-cl">Publicar turno</button>
     </div>
 
-    <!-- Programa de Servicio (roles de la reunión) -->
+    <!-- Programa de Servicio -->
     <div class="card">
       <div class="card-hd"><span class="card-title">🎙️ Programa de Servicio</span></div>
       <p style="font-size:.81rem;color:var(--text2);margin-bottom:.9rem">Roles de servicio para la reunión: acomodadores, micrófonos, sonido, etc.</p>
@@ -552,11 +570,11 @@ async function loadAdmin(container) {
         </div>
       </div>
       <div class="g2">
-        <div class="fg"><label>🎙️ Sonido</label><input type="text" id="sv-sound" placeholder="Nombre..."/></div>
-        <div class="fg"><label>🎤 Micrófonos</label><input type="text" id="sv-mic" placeholder="Nombre(s)..."/></div>
-        <div class="fg"><label>🚪 Acomodador(es)</label><input type="text" id="sv-usher" placeholder="Nombre(s)..."/></div>
-        <div class="fg"><label>📹 Zoom / Transmisión</label><input type="text" id="sv-zoom" placeholder="Nombre..."/></div>
-        <div class="fg"><label>📖 Indicador de plataforma</label><input type="text" id="sv-platform" placeholder="Nombre..."/></div>
+        <div class="fg"><label>🎙️ Sonido</label>${brotherSel('sv-sound')}</div>
+        <div class="fg"><label>🎤 Micrófonos</label>${brotherSel('sv-mic')}</div>
+        <div class="fg"><label>🚪 Acomodador(es)</label>${brotherSel('sv-usher')}</div>
+        <div class="fg"><label>📹 Zoom / Transmisión</label>${brotherSel('sv-zoom')}</div>
+        <div class="fg"><label>📖 Indicador de plataforma</label>${brotherSel('sv-platform')}</div>
         <div class="fg"><label>🔧 Otro rol</label><input type="text" id="sv-other" placeholder="Rol: Nombre..."/></div>
       </div>
       <button class="btn-action" id="btn-add-sv">Publicar programa</button>
@@ -568,7 +586,7 @@ async function loadAdmin(container) {
       <div class="g2">
         <div class="fg"><label>Trabajo a realizar</label><input type="text" id="wk-title" placeholder="Pintura, cambio de focos..."/></div>
         <div class="fg"><label>Fecha</label><input type="date" id="wk-date"/></div>
-        <div class="fg"><label>Responsable(s)</label><input type="text" id="wk-who" placeholder="Grupo Norte..."/></div>
+        <div class="fg"><label>Responsable(s)</label>${brotherSel('wk-who')}</div>
       </div>
       <div class="fg"><label>Detalle</label><textarea id="wk-notes" placeholder="Descripción..." style="min-height:60px"></textarea></div>
       <button class="btn-action" id="btn-add-wk">Publicar</button>
@@ -645,13 +663,16 @@ async function loadAdmin(container) {
   })
 
   document.getElementById('btn-add-cl').addEventListener('click', async () => {
-    const who   = document.getElementById('cl-who').value.trim()
-    const date  = document.getElementById('cl-date').value
-    const notes = document.getElementById('cl-notes').value.trim()
-    if (!who || !date) { toast('Error', 'Completa responsable y fecha', true); return }
-    await ins('cleaning', { who, date, notes })
-    toast('Turno publicado', who)
-    ;['cl-who','cl-notes'].forEach(id => document.getElementById(id).value = '')
+    const groupId = document.getElementById('cl-group').value
+    const captain = document.getElementById('cl-captain').value
+    const date    = document.getElementById('cl-date').value
+    const notes   = document.getElementById('cl-notes').value.trim()
+    if (!captain || !date) { toast('Error', 'Selecciona encargado y fecha', true); return }
+    await ins('cleaning', { who: captain, date, notes, group_id: groupId || null })
+    toast('Turno publicado', captain)
+    document.getElementById('cl-group').value = ''
+    document.getElementById('cl-captain').value = ''
+    document.getElementById('cl-notes').value = ''
     document.getElementById('cl-date').value = ''
     loadAdmin(container)
   })
