@@ -85,13 +85,14 @@ export async function renderDashboard(container, currentUser) {
     </div>`}
 
     <div class="g2">
-      <div class="card">
+      <div class="card" style="cursor:pointer" id="dash-next-meeting-card">
         <div class="card-hd"><span class="card-title">Próxima reunión</span><span class="badge b-green">Esta semana</span></div>
         ${upcoming ? `
         <div class="meet-body">
           <h4 style="font-weight:700;margin-bottom:.25rem">${upcoming.date_range}</h4>
           <p style="font-size:.83rem;color:var(--text2)">${upcoming.bible_reading || ''}</p>
           <p style="font-size:.78rem;color:var(--text3);margin-top:.2rem">🎵 Canción ${upcoming.opening_song || ''}</p>
+          <div style="margin-top:.5rem"><span class="badge b-sky" style="font-size:.72rem">Ver programa →</span></div>
         </div>` : '<div class="empty"><span class="emic">📅</span><p>Sin reuniones cargadas aún</p></div>'}
       </div>
       <div class="card">
@@ -105,4 +106,12 @@ export async function renderDashboard(container, currentUser) {
       </div>
     </div>
   </div>`
+
+  // Click en la tarjeta de próxima reunión → ir a Reuniones
+  if (upcoming) {
+    document.getElementById('dash-next-meeting-card')?.addEventListener('click', () => {
+      window.__loadPage('meetings')
+      document.querySelectorAll('.nt, .bn').forEach(b => b.classList.toggle('active', b.dataset.page === 'meetings'))
+    })
+  }
 }
