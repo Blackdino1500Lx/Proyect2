@@ -5,14 +5,10 @@ export function renderShell(userData) {
   const isAdmin = userData.role === 'admin'
 
   const navItems = [
-    { page: 'dash',          icon: '🏠', label: 'Inicio' },
-    { page: 'meetings',      icon: '📅', label: 'Reuniones' },
-    { page: 'announcements', icon: '📢', label: 'Anuncios' },
-    { page: 'assignments',   icon: '📋', label: 'Asignaciones' },
-    { page: 'programs',      icon: '🗂️', label: 'Programas' },
-    { page: 'map',           icon: '🗺️', label: 'Predicación' },
-    { page: 'reports',       icon: '📊', label: 'Informes' },
-    ...(isAdmin ? [{ page: 'admin', icon: '⚙️', label: 'Admin' }] : [])
+    { page: 'dash',      icon: '🏠', label: 'Inicio' },
+    { page: 'meetings',  icon: '📅', label: 'Reuniones' },
+    { page: 'programs',  icon: '🗂️', label: 'Programas' },
+    { page: 'map',       icon: '🗺️', label: 'Predicación' },
   ]
 
   document.getElementById('app').innerHTML = `
@@ -35,11 +31,11 @@ export function renderShell(userData) {
           <div class="role-pip ${isAdmin ? 'admin' : ''}"></div>
           <span>${userData.name?.split(' ')[0] || userData.email}</span>
         </div>
+        ${isAdmin ? `<button class="btn-admin-gear" id="btn-goto-admin" title="Administración">⚙️</button>` : ''}
         <button class="btn-out" id="btn-logout">Salir</button>
       </div>
     </header>
 
-    <!-- Top nav — solo visible en desktop -->
     <nav id="top-nav">
       ${navItems.map((n, i) => `
         <button class="nt ${i === 0 ? 'active' : ''}" data-page="${n.page}">
@@ -47,11 +43,10 @@ export function renderShell(userData) {
         </button>`).join('')}
     </nav>
 
-    <main id="main-content" style="padding-bottom:80px">
+    <main id="main-content">
       <!-- páginas aquí -->
     </main>
 
-    <!-- Bottom nav — solo visible en móvil -->
     <nav id="bottom-nav">
       ${navItems.map((n, i) => `
         <button class="bn ${i === 0 ? 'active' : ''}" data-page="${n.page}">
@@ -60,11 +55,9 @@ export function renderShell(userData) {
         </button>`).join('')}
     </nav>`
 
-  // Listeners en ambos navs
   document.querySelectorAll('.nt, .bn').forEach(btn => {
     btn.addEventListener('click', () => {
       const page = btn.dataset.page
-      // Sincronizar ambos navs
       document.querySelectorAll('.nt').forEach(b => b.classList.toggle('active', b.dataset.page === page))
       document.querySelectorAll('.bn').forEach(b => b.classList.toggle('active', b.dataset.page === page))
       go(page)
@@ -77,7 +70,12 @@ export function renderShell(userData) {
     window.__showAuth()
   })
 
-  document.getElementById('btn-close-install').addEventListener('click', () => {
+  document.getElementById('btn-close-install')?.addEventListener('click', () => {
     document.getElementById('install-bar').classList.remove('show')
+  })
+
+  document.getElementById('btn-goto-admin')?.addEventListener('click', () => {
+    go('admin')
+    window.__loadPage('admin')
   })
 }

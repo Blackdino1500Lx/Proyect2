@@ -4,6 +4,7 @@ import { renderAuth }       from './pages/Auth.js'
 import { renderShell }      from './pages/Shell.js'
 import { renderDashboard }  from './pages/Dashboard.js'
 import { renderMeetings }   from './pages/Meetings.js'
+import { renderWeekend }    from './pages/Weekend.js'
 import { go }               from './utils/router.js'
 import { DEMO_MODE, supabase } from './config/supabase.js'
 import { get, getDS, ins, del, upsertReport, getUsers, getGroups, setUserGroup, setUserRole } from './services/db.js'
@@ -51,16 +52,11 @@ window.__loadPage = loadPage
 async function loadPage(name) {
   const container = document.getElementById('main-content')
   switch(name) {
-    case 'dash':          return loadDash(container)
-    case 'meetings':      return loadMeetings(container)
-    case 'announcements': return loadAnnouncements(container)
-    case 'assignments':   return loadAssignments(container)
-    case 'programs':      return loadPrograms(container)
-    case 'cleaning':      return loadCleaning(container)
-    case 'workprogram':   return loadWork(container)
-    case 'map':           return loadMap(container)
-    case 'reports':       return loadReports(container)
-    case 'admin':         return loadAdmin(container)
+    case 'dash':     return loadDash(container)
+    case 'meetings': return loadMeetingsPage(container)
+    case 'programs': return loadProgramsPage(container)
+    case 'map':      return loadMapPage(container)
+    case 'admin':    return loadAdmin(container)
   }
 }
 
@@ -70,10 +66,102 @@ async function loadDash(container) {
   await renderDashboard(container, CU)
 }
 
-// ── 7. MEETINGS ────────────────────────────────────────────────
-async function loadMeetings(container) {
-  await renderMeetings(container, CU)
+// ── 7. MEETINGS PAGE (tabs: Entre semana / Fin de semana / Anuncios / Asignaciones) ──
+async function loadMeetingsPage(container) {
+  const tab = window.__meetingsTab || 'midweek'
+  container.innerHTML = `<div class="page active" id="page-meetings">
+    <div class="section-hd"><h2 class="section-title">Reuniones</h2></div>
+    <div class="meet-type-tabs" style="margin-bottom:1rem">
+      <button class="mtt ${tab==='midweek'?'active':''}"   id="mtab-midweek">📅 Entre Semana</button>
+      <button class="mtt ${tab==='weekend'?'active':''}"   id="mtab-weekend">⛪ Fin de Semana</button>
+      <button class="mtt ${tab==='ann'?'active':''}"       id="mtab-ann">📢 Anuncios</button>
+      <button class="mtt ${tab==='assign'?'active':''}"    id="mtab-assign">📋 Asignaciones</button>
+    </div>
+    <div id="meetings-tab-content"></div>
+  </div>`
+
+  const tabContent = document.getElementById('meetings-tab-content')
+
+  async function switchTab(t) {
+    window.__meetingsTab = t
+    document.querySelectorAll('.mtt').forEach(b => b.classList.remove('active'))
+    document.getElementById('mtab-' + t)?.classList.add('active')
+    if (t === 'midweek')  await renderMeetings(tabContent, CU)
+    if (t === 'weekend')  await renderWeekend(tabContent, CU)
+    if (t === 'ann')      await loadAnnouncements(tabContent)
+    if (t === 'assign')   await loadAssignments(tabContent)
+  }
+
+  document.getElementById('mtab-midweek')?.addEventListener('click', () => switchTab('midweek'))
+  document.getElementById('mtab-weekend')?.addEventListener('click', () => switchTab('weekend'))
+  document.getElementById('mtab-ann')?.addEventListener('click',     () => switchTab('ann'))
+  document.getElementById('mtab-assign')?.addEventListener('click',  () => switchTab('assign'))
+
+  await switchTab(tab)
 }
+
+// ── 8. PROGRAMS PAGE (Limpieza + Servicio + Mantenimiento) ──────
+async function loadProgramsPage(container) {
+  const tab = window.__programsTab || 'cleaning'
+  container.innerHTML = `<div class="page active" id="page-programs">
+    <div class="section-hd"><h2 class="section-title">Programas</h2></div>
+    <div class="meet-type-tabs" style="margin-bottom:1rem">
+      <button class="mtt ${tab==='cleaning'?'active':''}"  id="ptab-cleaning">🧹 Limpieza</button>
+      <button class="mtt ${tab==='service'?'active':''}"   id="ptab-service">🎙️ Servicio</button>
+      <button class="mtt ${tab==='maint'?'active':''}"     id="ptab-maint">🔧 Mantenimiento</button>
+    </div>
+    <div id="programs-tab-content"></div>
+  </div>`
+
+  const tabContent = document.getElementById('programs-tab-content')
+
+  async function switchTab(t) {
+    window.__programsTab = t
+    document.querySelectorAll('.mtt').forEach(b => b.classList.remove('active'))
+    document.getElementById('ptab-' + t)?.classList.add('active')
+    if (t === 'cleaning') await loadCleaning(tabContent)
+    if (t === 'service')  await loadService(tabContent)
+    if (t === 'maint')    await loadMaint(tabContent)
+  }
+
+  document.getElementById('ptab-cleaning')?.addEventListener('click', () => switchTab('cleaning'))
+  document.getElementById('ptab-service')?.addEventListener('click',  () => switchTab('service'))
+  document.getElementById('ptab-maint')?.addEventListener('click',    () => switchTab('maint'))
+
+  await switchTab(tab)
+}
+
+// ── 9. MAP PAGE (mapa + informe propio) ────────────────────────
+async function loadMapPage(container) {
+  const tab = window.__mapTab || 'map'
+  container.innerHTML = `<div class="page active" id="page-map-page">
+    <div class="section-hd"><h2 class="section-title">Predicación</h2></div>
+    <div class="meet-type-tabs" style="margin-bottom:1rem">
+      <button class="mtt ${tab==='map'?'active':''}"     id="maptab-map">🗺️ Territorios</button>
+      <button class="mtt ${tab==='report'?'active':''}"  id="maptab-report">📊 Mi Informe</button>
+    </div>
+    <div id="map-tab-content"></div>
+  </div>`
+
+  const tabContent = document.getElementById('map-tab-content')
+
+  async function switchTab(t) {
+    window.__mapTab = t
+    document.querySelectorAll('.mtt').forEach(b => b.classList.remove('active'))
+    document.getElementById('maptab-' + t)?.classList.add('active')
+    if (t === 'map')    loadMap(tabContent)
+    if (t === 'report') await loadReports(tabContent)
+  }
+
+  document.getElementById('maptab-map')?.addEventListener('click',    () => switchTab('map'))
+  document.getElementById('maptab-report')?.addEventListener('click', () => switchTab('report'))
+
+  await switchTab(tab)
+}
+
+// ── Helpers para Programas ─────────────────────────────────────
+async function loadMeetings(container) { await renderMeetings(container, CU) }
+async function loadWeekend(container)  { await renderWeekend(container, CU) }
 
 // ── 8. ANNOUNCEMENTS ───────────────────────────────────────────
 async function loadAnnouncements(container) {
@@ -147,55 +235,25 @@ async function loadAssignments(container) {
   })
 }
 
-// ── 10. PROGRAMS ───────────────────────────────────────────────
-function loadPrograms(container) {
-  container.innerHTML = `<div class="page active" id="page-programs">
-    <div class="section-hd"><h2 class="section-title">Programas</h2></div>
-    <div class="g2">
-      <div class="card" style="cursor:pointer;border-color:var(--border2)" id="go-cleaning">
-        <div style="font-size:2rem;margin-bottom:.5rem">🧹</div>
-        <div style="font-family:var(--serif);font-size:1.05rem;color:var(--sky3);font-weight:600;margin-bottom:.25rem">Limpieza</div>
-        <p style="font-size:.82rem;color:var(--text2)">Programa de turnos de limpieza del Salón del Reino</p>
-      </div>
-      <div class="card" style="cursor:pointer;border-color:var(--border2)" id="go-work">
-        <div style="font-size:2rem;margin-bottom:.5rem">🔧</div>
-        <div style="font-family:var(--serif);font-size:1.05rem;color:var(--sky3);font-weight:600;margin-bottom:.25rem">Programa de trabajo</div>
-        <p style="font-size:.82rem;color:var(--text2)">Mantenimiento y trabajos del Salón del Reino</p>
-      </div>
-    </div>
-  </div>`
-
-  document.getElementById('go-cleaning').addEventListener('click', () => { go('cleaning'); loadPage('cleaning') })
-  document.getElementById('go-work').addEventListener('click',     () => { go('workprogram'); loadPage('workprogram') })
-}
-
+// ── 10. PROGRAMS (subpages sin botón back) ─────────────────────
 async function loadCleaning(container) {
-  const list = await get('cleaning')
+  const all   = await get('cleaning')
+  const today = NOW.toISOString().split('T')[0]
+  const list  = all.filter(c => c.date >= today)
   const admin = CU?.role === 'admin'
-  container.innerHTML = `<div class="page active" id="page-cleaning">
-    <div class="section-hd">
-      <div style="display:flex;align-items:center;gap:.7rem">
-        <button class="btn-sm" id="back-programs">← Programas</button>
-        <h2 class="section-title">🧹 Limpieza</h2>
-      </div>
-    </div>
-    ${list.map(c => {
-      const d = new Date(c.date + 'T00:00:00')
-      return `<div class="prog-card">
-        <div class="prog-icon">🧹</div>
-        <div class="prog-body" style="flex:1">
-          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
-            <h4>${c.who}</h4>
-            ${admin ? `<button class="btn-sm danger" data-del-cl="${c.id}">Eliminar</button>` : ''}
-          </div>
-          <p>${c.notes || ''}</p>
-          <div class="prog-meta">📅 ${formatDate(c.date)}</div>
+  container.innerHTML = `
+    ${list.map(c => `<div class="prog-card">
+      <div class="prog-icon">🧹</div>
+      <div class="prog-body" style="flex:1">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+          <h4>${c.who}</h4>
+          ${admin ? `<button class="btn-sm danger" data-del-cl="${c.id}">Eliminar</button>` : ''}
         </div>
-      </div>`
-    }).join('') || '<div class="empty"><span class="emic">🧹</span><p>Sin turnos programados</p></div>'}
-  </div>`
+        <p>${c.notes || ''}</p>
+        <div class="prog-meta">📅 ${formatDate(c.date)}</div>
+      </div>
+    </div>`).join('') || '<div class="empty"><span class="emic">🧹</span><p>Sin turnos programados</p></div>'}`
 
-  document.getElementById('back-programs').addEventListener('click', () => { go('programs'); loadPage('programs') })
   container.querySelectorAll('[data-del-cl]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('¿Eliminar?')) return
@@ -206,33 +264,30 @@ async function loadCleaning(container) {
   })
 }
 
-async function loadWork(container) {
-  const list = await get('workprogram')
+async function loadService(container) {
+  const all   = await get('workprogram')
+  const today = NOW.toISOString().split('T')[0]
+  const list  = all.filter(w => w.date >= today && w.title?.includes('Programa de servicio'))
   const admin = CU?.role === 'admin'
 
-  // Separar mantenimiento de servicio
-  const service = list.filter(w => w.title?.includes('Programa de servicio'))
-  const maint   = list.filter(w => !w.title?.includes('Programa de servicio'))
-
-  const renderServiceCard = (w) => {
+  container.innerHTML = list.map(w => {
     let roles = {}
     try { roles = JSON.parse(w.notes || '{}') } catch {}
     const d = new Date(w.date + 'T00:00:00')
     const roleItems = [
-      { icon:'🎙️', label:'Sonido',              val: roles.sound },
-      { icon:'🎤', label:'Micrófonos',           val: roles.mic },
-      { icon:'🚪', label:'Acomodadores',         val: roles.usher },
-      { icon:'📹', label:'Zoom / Transmisión',   val: roles.zoom },
+      { icon:'🎙️', label:'Sonido',            val: roles.sound },
+      { icon:'🎤', label:'Micrófonos',         val: roles.mic },
+      { icon:'🚪', label:'Acomodadores',       val: roles.usher },
+      { icon:'📹', label:'Zoom / Transmisión', val: roles.zoom },
       { icon:'📖', label:'Indicador plataforma', val: roles.platform },
-      { icon:'🔧', label:'Otro',                 val: roles.other },
+      { icon:'🔧', label:'Otro',               val: roles.other },
     ].filter(r => r.val)
-
     return `<div class="prog-card">
       <div class="prog-icon">🎙️</div>
       <div class="prog-body" style="flex:1">
         <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
           <h4>${w.title}</h4>
-          ${admin ? `<button class="btn-sm danger" data-del-wk="${w.id}">Eliminar</button>` : ''}
+          ${admin ? `<button class="btn-sm danger" data-del-sv="${w.id}">Eliminar</button>` : ''}
         </div>
         <div class="prog-meta">📅 ${d.toLocaleDateString('es',{weekday:'long',month:'long',day:'numeric'})}</div>
         <div style="margin-top:.5rem;display:flex;flex-direction:column;gap:.2rem">
@@ -240,9 +295,25 @@ async function loadWork(container) {
         </div>
       </div>
     </div>`
-  }
+  }).join('') || '<div class="empty"><span class="emic">🎙️</span><p>Sin programas de servicio</p></div>'
 
-  const renderMaintCard = (w) => {
+  container.querySelectorAll('[data-del-sv]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar?')) return
+      await del('workprogram', btn.dataset.delSv)
+      toast('Eliminado', 'Eliminado')
+      loadService(container)
+    })
+  })
+}
+
+async function loadMaint(container) {
+  const all   = await get('workprogram')
+  const today = NOW.toISOString().split('T')[0]
+  const list  = all.filter(w => w.date >= today && !w.title?.includes('Programa de servicio'))
+  const admin = CU?.role === 'admin'
+
+  container.innerHTML = list.map(w => {
     const notes = w.notes?.replace('[MANTENIMIENTO] ','') || ''
     const d = new Date(w.date + 'T00:00:00')
     return `<div class="prog-card">
@@ -250,46 +321,20 @@ async function loadWork(container) {
       <div class="prog-body" style="flex:1">
         <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
           <h4>${notes.split('—')[0]?.trim() || 'Mantenimiento'}</h4>
-          ${admin ? `<button class="btn-sm danger" data-del-wk="${w.id}">Eliminar</button>` : ''}
+          ${admin ? `<button class="btn-sm danger" data-del-mt="${w.id}">Eliminar</button>` : ''}
         </div>
         <p>${notes.split('—')[1]?.trim() || ''}</p>
-        <div class="prog-meta">👷 ${w.who || '—'} &nbsp;·&nbsp; 📅 ${d.toLocaleDateString('es',{weekday:'long',month:'long',day:'numeric'})}</div>
+        <div class="prog-meta">👷 ${w.who || '—'} · 📅 ${d.toLocaleDateString('es',{weekday:'long',month:'long',day:'numeric'})}</div>
       </div>
     </div>`
-  }
+  }).join('') || '<div class="empty"><span class="emic">🔧</span><p>Sin trabajos de mantenimiento</p></div>'
 
-  container.innerHTML = `<div class="page active" id="page-workprogram">
-    <div class="section-hd">
-      <div style="display:flex;align-items:center;gap:.7rem">
-        <button class="btn-sm" id="back-programs2">← Programas</button>
-        <h2 class="section-title">Programa de Trabajo</h2>
-      </div>
-    </div>
-
-    ${service.length > 0 ? `
-    <div style="margin-bottom:.5rem">
-      <div style="font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem">🎙️ Programa de Servicio</div>
-      ${service.map(renderServiceCard).join('')}
-    </div>` : ''}
-
-    ${maint.length > 0 ? `
-    <div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem">🔧 Mantenimiento</div>
-      ${maint.map(renderMaintCard).join('')}
-    </div>` : ''}
-
-    ${service.length === 0 && maint.length === 0
-      ? '<div class="empty"><span class="emic">🔧</span><p>Sin programas publicados</p></div>'
-      : ''}
-  </div>`
-
-  document.getElementById('back-programs2').addEventListener('click', () => { go('programs'); loadPage('programs') })
-  container.querySelectorAll('[data-del-wk]').forEach(btn => {
+  container.querySelectorAll('[data-del-mt]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('¿Eliminar?')) return
-      await del('workprogram', btn.dataset.delWk)
+      await del('workprogram', btn.dataset.delMt)
       toast('Eliminado', 'Eliminado')
-      loadWork(container)
+      loadMaint(container)
     })
   })
 }
