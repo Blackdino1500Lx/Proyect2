@@ -346,13 +346,13 @@ function loadMap(container) {
 // ── 12. REPORTS ────────────────────────────────────────────────
 async function loadReports(container) {
   const isAdmin = CU?.role === 'admin'
-  if (isAdmin) return loadAdminReports(container)
-
   const all  = await get('reports')
   const mine = all.filter(r => r.email === CU?.email && r.year === NOW.getFullYear())
 
   container.innerHTML = `<div class="page active" id="page-reports">
     <div class="section-hd"><h2 class="section-title">Informes de Predicación</h2></div>
+
+    <!-- Mi informe — visible para TODOS incluyendo admins -->
     <div class="card">
       <div class="card-hd">
         <span class="card-title">Mi informe mensual</span>
@@ -369,6 +369,7 @@ async function loadReports(container) {
       <div class="fg"><label>Comentarios</label><textarea id="rp-notes" placeholder="Observaciones..."></textarea></div>
       <button class="btn-action" id="btn-save-report">Guardar informe</button>
     </div>
+
     <div class="card">
       <div class="card-hd">
         <span class="card-title">Mi historial ${NOW.getFullYear()}</span>
@@ -384,9 +385,12 @@ async function loadReports(container) {
         }).join('')}
       </div>
     </div>
+
+    <!-- Vista congregación — solo admins -->
+    ${isAdmin ? `<div id="admin-reports-section"></div>` : ''}
   </div>`
 
-  // Pre-fill existing report
+  // Pre-fill form
   const selEl = document.getElementById('report-month-sel')
   const fillForm = () => {
     const selMonth = parseInt(selEl.value)
@@ -412,6 +416,12 @@ async function loadReports(container) {
     toast('Informe guardado', `${MONTHS[month]} ${year} · ${hours} horas`)
     loadReports(container)
   })
+
+  // Cargar vista congregación para admins
+  if (isAdmin) {
+    const adminSection = document.getElementById('admin-reports-section')
+    if (adminSection) await loadAdminReports(adminSection)
+  }
 }
 
 async function loadAdminReports(container) {
@@ -423,13 +433,12 @@ async function loadAdminReports(container) {
   const yearReps = reports.filter(r => r.year === year)
   const monthReps = reports.filter(r => r.year === year && r.month === month)
 
-  container.innerHTML = `<div class="page active" id="page-reports">
-    <div class="section-hd"><h2 class="section-title">Informes de Predicación</h2></div>
-    <div class="card">
+  container.innerHTML = `
+    <div class="card" style="margin-top:.5rem">
       <div class="card-hd">
-        <span class="card-title">Informes de la congregación — ${MONTHS[month]} ${year}</span>
+        <span class="card-title">📊 Informes de la congregación — ${MONTHS[month]} ${year}</span>
       </div>
-      <div style="overflow-x:auto">
+      <div class="tbl-wrap">
         <table class="tbl">
           <thead><tr><th>Publicador</th><th>Grupo</th><th>Horas</th><th>Revisitas</th><th>Estudios</th><th>Videos</th><th>Estado</th></tr></thead>
           <tbody>
@@ -460,8 +469,7 @@ async function loadAdminReports(container) {
           <div class="stat"><div class="stat-icon">🔄</div><div><div class="stat-val">${yearReps.reduce((s,r)=>s+(r.revisits||0),0)}</div><div class="stat-lbl">Revisitas</div></div></div>
         </div>
       </div>
-    </div>
-  </div>`
+    </div>`
 }
 
 // ── 13. ADMIN ──────────────────────────────────────────────────
@@ -698,7 +706,8 @@ document.getElementById('btn-install')?.addEventListener('click', async () => {
   if (dPr) { dPr.prompt(); await dPr.userChoice; dPr = null }
   document.getElementById('install-bar')?.classList.remove('show')
 })
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})
+// Service worker desactivado temporalmente
+// if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})
 
 // ── 15. Start ──────────────────────────────────────────────────
 window.__showAuth()
