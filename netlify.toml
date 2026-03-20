@@ -1,5 +1,5 @@
 [build]
-  publish = "."
+  publish = "public"
   functions = "netlify/functions"
 
 [functions]
@@ -8,10 +8,8 @@
 [functions."extract-pdf"]
   timeout = 26
 
-[[headers]]
-  for = "/src/*"
-  [headers.values]
-    Content-Type = "text/javascript"
+[functions."extract-watchtower"]
+  timeout = 26
 
 [[redirects]]
   from = "/*"
