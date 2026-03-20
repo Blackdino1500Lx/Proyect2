@@ -579,18 +579,29 @@ async function loadAdmin(container) {
       <div class="card-hd"><span class="card-title">👥 Publicadores</span><button class="btn-sm" id="btn-refresh-users">↻ Actualizar</button></div>
       <div style="overflow-x:auto">
         <table class="tbl">
-          <thead><tr><th>Nombre</th><th>Correo</th><th>Grupo</th><th>Rol</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Nombre</th><th>Género</th><th>Bautizado</th><th>Escuela</th><th>Grupo</th><th>Rol</th><th>Acciones</th></tr></thead>
           <tbody>
             ${users.map(u => {
               const grp = DEMO_MODE ? groups.find(g => g.id === u.group_id) : u.groups
               return `<tr>
-                <td><strong>${u.name||'—'}</strong></td>
-                <td style="color:var(--text2);font-size:.83rem">${u.email}</td>
-                <td>${grp ? `<span class="group-pill">👨‍👩‍👧 ${grp.name||grp}</span>` :
-                  `<select class="btn-sm" data-set-grp="${u.email}" style="padding:.28rem .5rem">
+                <td><strong>${u.name||'—'}</strong><div style="font-size:.72rem;color:var(--text3)">${u.email}</div></td>
+                <td>
+                  <select class="btn-sm" data-set-gender="${u.id}" style="padding:.25rem .4rem;font-size:.75rem">
+                    <option value="brother" ${u.gender!=='sister'?'selected':''}>Hermano</option>
+                    <option value="sister"  ${u.gender==='sister'?'selected':''}>Hermana</option>
+                  </select>
+                </td>
+                <td style="text-align:center">
+                  <input type="checkbox" data-set-baptized="${u.id}" ${u.baptized?'checked':''} style="width:16px;height:16px;cursor:pointer"/>
+                </td>
+                <td style="text-align:center">
+                  <input type="checkbox" data-set-school="${u.id}" ${u.school?'checked':''} style="width:16px;height:16px;cursor:pointer"/>
+                </td>
+                <td>
+                  <select class="btn-sm" data-set-grp="${u.email}" style="padding:.25rem .4rem;font-size:.75rem">
                     <option value="">Sin grupo</option>
                     ${groups.map(g => `<option value="${g.id}" ${u.group_id===g.id?'selected':''}>${g.name}</option>`).join('')}
-                  </select>`}
+                  </select>
                 </td>
                 <td><span class="badge ${u.role==='admin'?'b-sky':'b-gray'}">${u.role==='admin'?'Admin':'Publicador'}</span></td>
                 <td>${u.email !== CU?.email ? `<button class="btn-sm" data-toggle-role="${u.email}" data-cur-role="${u.role}">${u.role==='admin'?'↓ Estándar':'↑ Admin'}</button>` : '—'}</td>
@@ -692,6 +703,30 @@ async function loadAdmin(container) {
       await setUserRole(btn.dataset.toggleRole, newRole)
       toast('Rol actualizado', `→ ${newRole}`)
       loadAdmin(container)
+    })
+  })
+
+  // Género
+  container.querySelectorAll('[data-set-gender]').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      await supabase.from('users').update({ gender: sel.value }).eq('id', sel.dataset.setGender)
+      toast('Actualizado', sel.value === 'sister' ? 'Hermana' : 'Hermano')
+    })
+  })
+
+  // Bautizado
+  container.querySelectorAll('[data-set-baptized]').forEach(chk => {
+    chk.addEventListener('change', async () => {
+      await supabase.from('users').update({ baptized: chk.checked }).eq('id', chk.dataset.setBaptized)
+      toast('Actualizado', chk.checked ? 'Bautizado ✓' : 'No bautizado')
+    })
+  })
+
+  // Escuela del ministerio
+  container.querySelectorAll('[data-set-school]').forEach(chk => {
+    chk.addEventListener('change', async () => {
+      await supabase.from('users').update({ school: chk.checked }).eq('id', chk.dataset.setSchool)
+      toast('Actualizado', chk.checked ? 'En escuela ✓' : 'Sin escuela')
     })
   })
 }
