@@ -62,6 +62,8 @@ header{position:sticky;top:0;z-index:200;background:rgba(255,255,255,.95);backdr
 .role-pip.admin{background:var(--sky)}
 .btn-out{background:transparent;border:1.5px solid var(--border2);border-radius:8px;color:var(--text2);padding:.28rem .6rem;cursor:pointer;font-size:.75rem;font-family:var(--sans);font-weight:600;transition:all .2s;white-space:nowrap}
 .btn-out:active{background:var(--rose-bg);color:var(--rose)}
+.btn-admin-gear{background:transparent;border:none;cursor:pointer;font-size:1.15rem;padding:.2rem .35rem;border-radius:8px;transition:transform .2s;line-height:1}
+.btn-admin-gear:hover{transform:rotate(45deg)}
 
 /* ── Top nav (desktop) ── */
 #top-nav{display:flex;overflow-x:auto;scrollbar-width:none;gap:.15rem;padding:.5rem .75rem;background:var(--white);border-bottom:1.5px solid var(--border);-webkit-overflow-scrolling:touch}
