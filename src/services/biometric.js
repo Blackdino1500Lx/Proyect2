@@ -37,6 +37,10 @@ export async function hasPasskey(userId) {
   return data && data.length > 0
 }
 
+export function hasPasskeyOnDevice() {
+  return !!localStorage.getItem('pizarra_passkey_id')
+}
+
 // ── Registrar nueva passkey (después del login normal) ────────
 export async function registerPasskey(userId, userName) {
   try {
