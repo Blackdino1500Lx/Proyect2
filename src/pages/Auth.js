@@ -2,21 +2,20 @@ import { login, register } from '../services/auth.js'
 import { supabase } from '../config/supabase.js'
 import { toast } from '../utils/helpers.js'
 import {
-  isBiometricAvailable,
-  hasPasskey,
+  isBiometricSupported,
+  hasPasskeyOnDevice,
   registerPasskey,
   authenticateWithPasskey
-} from '../services/biometric.js'
+} from '../utils/biometric.js'
 
 let bioAvailable = false
 
 export async function renderAuth() {
   // Verificar soporte biométrico
-  bioAvailable = await isBiometricAvailable()
+  bioAvailable = isBiometricSupported()
 
   // Verificar si hay passkey guardada en localStorage
-  const savedUserId = localStorage.getItem('pizarra_passkey_uid')
-  const hasBio = bioAvailable && savedUserId
+  const hasBio = bioAvailable && hasPasskeyOnDevice()
 
   document.getElementById('auth-screen').innerHTML = `
     <div class="auth-wrap">
@@ -83,7 +82,7 @@ export async function renderAuth() {
   // Quitar biometría
   document.getElementById('btn-remove-bio')?.addEventListener('click', () => {
     if (!confirm('¿Quitar el acceso biométrico de este dispositivo?')) return
-    localStorage.removeItem('pizarra_passkey_uid')
+    localStorage.removeItem('pizarra_passkey_id')
     renderAuth()
     toast('Listo', 'Acceso biométrico desactivado')
   })
@@ -105,7 +104,7 @@ export async function renderAuth() {
       const userData = await login(email, pass)
       window.__onLogin(userData)
       // Ofrecer biometría después del login si está disponible y no está configurada
-      if (bioAvailable && !localStorage.getItem('pizarra_passkey_uid')) {
+      if (bioAvailable && !localStorage.getItem('pizarra_passkey_id')) {
         offerBiometricSetup(userData.id, userData.name || userData.email)
       }
     } catch(e) {
@@ -164,7 +163,7 @@ async function offerBiometricSetup(userId, userName) {
     if (!confirmed) return
     const result = await registerPasskey(userId, userName)
     if (result.success) {
-      localStorage.setItem('pizarra_passkey_uid', userId)
+      localStorage.setItem('pizarra_passkey_user', userId)
       toast('¡Listo!', 'Acceso biométrico activado 👆')
     } else {
       toast('Error', result.error, true)
