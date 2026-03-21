@@ -68,9 +68,11 @@ export async function renderAuth() {
     try {
       const result = await authenticateWithPasskey()
       if (!result.success) throw new Error(result.error)
+      const userId = result.userId || result.user_id
+      if (!userId) throw new Error('RPC no devolvio userId. result: ' + JSON.stringify(result))
       const { data: profile, error: profileError } = await supabase
-        .from('users').select('*, groups(*)').eq('id', result.userId).single()
-      if (!profile) throw new Error('Perfil no encontrado. userId: ' + result.userId + ' | err: ' + (profileError?.message || 'null'))
+        .from('users').select('*, groups(*)').eq('id', userId).single()
+      if (!profile) throw new Error('Perfil no encontrado. userId: ' + userId + ' | err: ' + (profileError?.message || 'null'))
       window.__onLogin({ ...profile, group: profile.groups })
     } catch(e) {
       toast('Error', e.message, true)

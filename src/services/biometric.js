@@ -130,7 +130,9 @@ export async function authenticateWithPasskey() {
 
     if (error || !data) return { success: false, error: 'Dispositivo no reconocido' }
 
-    return { success: true, userId: data.user_id, email: data.email }
+    // La RPC puede devolver user_id o userId según la versión
+    const userId = data.user_id || data.userId || (Array.isArray(data) && data[0]?.user_id)
+    return { success: true, userId, email: data.email || (Array.isArray(data) && data[0]?.email) }
 
   } catch (err) {
     if (err.name === 'NotAllowedError') return { success: false, error: 'Cancelado' }
