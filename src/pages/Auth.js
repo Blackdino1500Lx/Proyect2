@@ -69,10 +69,10 @@ export async function renderAuth() {
       const result = await authenticateWithPasskey()
       if (!result.success) throw new Error(result.error)
       const userId = result.userId || result.user_id
-      if (!userId) throw new Error('RPC no devolvio userId. result: ' + JSON.stringify(result))
-      const { data: profile, error: profileError } = await supabase
+      if (!userId) throw new Error('No se pudo identificar el usuario')
+      const { data: profile } = await supabase
         .from('users').select('*, groups(*)').eq('id', userId).single()
-      if (!profile) throw new Error('Perfil no encontrado. userId: ' + userId + ' | err: ' + (profileError?.message || 'null'))
+      if (!profile) throw new Error('Perfil no encontrado')
       window.__onLogin({ ...profile, group: profile.groups })
     } catch(e) {
       toast('Error', e.message, true)
@@ -169,12 +169,10 @@ async function offerBiometricSetup(userId, userName) {
         localStorage.setItem('pizarra_passkey_user', userId)
         toast('¡Listo!', 'Acceso biométrico activado 👆')
       } else {
-        toast('Error biométrico', result.error || 'Error desconocido', true)
-        alert('Error biométrico: ' + (result.error || 'Sin detalle'))
+        toast('No se pudo activar', result.error || 'Intenta de nuevo', true)
       }
     } catch(e) {
       toast('Error', e.message, true)
-      alert('Excepción: ' + e.name + ' — ' + e.message)
     }
   }, 1200)
 }

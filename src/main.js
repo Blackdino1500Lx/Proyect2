@@ -134,14 +134,14 @@ async function loadProgramsPage(container) {
   await switchTab(tab)
 }
 
-// ── 9. MAP/FIELD PAGE (territorios + informe propio) ──────────
+// ── 9. MAP/FIELD PAGE (territorios + informe deshabilitado) ───
 async function loadMapPage(container) {
   const tab = window.__mapTab || 'field'
   container.innerHTML = `<div class="page active" id="page-map-page">
     <div class="section-hd"><h2 class="section-title">Predicación</h2></div>
     <div class="meet-type-tabs" style="margin-bottom:1rem">
-      <button class="mtt ${tab==='field'?'active':''}"   id="maptab-field">🗺️ Territorios</button>
-      <button class="mtt ${tab==='report'?'active':''}"  id="maptab-report">📊 Mi Informe</button>
+      <button class="mtt ${tab==='field'?'active':''}"  id="maptab-field">🗺️ Territorios</button>
+      <button class="mtt ${tab==='report'?'active':''}" id="maptab-report">📊 Mi Informe</button>
     </div>
     <div id="map-tab-content"></div>
   </div>`
@@ -152,8 +152,14 @@ async function loadMapPage(container) {
     window.__mapTab = t
     document.querySelectorAll('.mtt').forEach(b => b.classList.remove('active'))
     document.getElementById('maptab-' + t)?.classList.add('active')
-    if (t === 'field')  await renderField(tabContent, CU)
-    if (t === 'report') await loadReports(tabContent)
+    if (t === 'field') await renderField(tabContent, CU)
+    if (t === 'report') tabContent.innerHTML = `
+      <div class="card" style="text-align:center;padding:2.5rem 1.5rem">
+        <div style="font-size:2.5rem;margin-bottom:1rem">🚧</div>
+        <div style="font-weight:700;font-size:1rem;color:var(--text);margin-bottom:.5rem">Función deshabilitada</div>
+        <p style="font-size:.85rem;color:var(--text2);margin-bottom:1.2rem">Esta sección está temporalmente fuera de servicio.</p>
+        <div style="font-size:.78rem;color:var(--text3)">Para más información contactá al desarrollador.</div>
+      </div>`
   }
 
   document.getElementById('maptab-field')?.addEventListener('click',  () => switchTab('field'))
