@@ -87,7 +87,6 @@ function buildAdminForm(users) {
         <div class="fg"><label>Fecha</label><input type="date" id="wk-date"/></div>
         <div class="fg"><label>Cantico apertura</label><input type="text" id="wk-open-song" placeholder="Ej: 32"/></div>
         <div class="fg"><label>Cantico intermedio</label><input type="text" id="wk-mid-song" placeholder="Ej: 128"/></div>
-        <div class="fg"><label>Cantico Atalaya</label><input type="text" id="wk-wt-song" placeholder="Ej: 58"/></div>
         <div class="fg"><label>Cantico cierre</label><input type="text" id="wk-close-song" placeholder="Ej: 14"/></div>
       </div>
 
@@ -192,7 +191,7 @@ function buildMeetingCard(m, isAdmin, users) {
           ${row('📖','Tema', m.study_theme)}
           ${row('🎤','Conductor', m.study_conductor)}
           ${row('📚','Lector', m.study_reader)}
-          <div style="font-size:.7rem;color:var(--text3);padding:.25rem 0">Cantico ${m.watchtower_song || '—'}</div>
+          <div style="font-size:.7rem;color:var(--text3);padding:.25rem 0">Cantico ${m.mid_song || '—'}</div>
         </div>
 
         <!-- Cierre -->
@@ -260,7 +259,7 @@ function attachEvents(container, isAdmin, meetings, users, currentUser) {
       meeting_date:     date,
       opening_song:     container.querySelector('#wk-open-song')?.value || '',
       mid_song:         container.querySelector('#wk-mid-song')?.value || '',
-      watchtower_song:  container.querySelector('#wk-wt-song')?.value || '',
+      watchtower_song:  null,
       closing_song:     container.querySelector('#wk-close-song')?.value || '',
       presidente:       container.querySelector('#wk-presidente')?.value || '',
       oracion_apertura: container.querySelector('#wk-oracion-ap')?.value || '',
