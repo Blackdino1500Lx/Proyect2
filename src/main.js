@@ -1,6 +1,6 @@
 import { injectStyles }    from './utils/styles.js'
 import { initDemo }         from './services/auth.js'
-import { renderAuth, offerBiometricSetup } from './pages/Auth.js'
+import { renderAuth } from './pages/Auth.js'
 import { renderShell }      from './pages/Shell.js'
 import { renderDashboard }  from './pages/Dashboard.js'
 import { renderMeetings }   from './pages/Meetings.js'
