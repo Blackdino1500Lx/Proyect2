@@ -161,12 +161,18 @@ async function offerBiometricSetup(userId, userName) {
       'La próxima vez podrás entrar sin escribir tu contraseña.'
     )
     if (!confirmed) return
-    const result = await registerPasskey(userId, userName)
-    if (result.success) {
-      localStorage.setItem('pizarra_passkey_user', userId)
-      toast('¡Listo!', 'Acceso biométrico activado 👆')
-    } else {
-      toast('Error', result.error, true)
+    try {
+      const result = await registerPasskey(userId, userName)
+      if (result.success) {
+        localStorage.setItem('pizarra_passkey_user', userId)
+        toast('¡Listo!', 'Acceso biométrico activado 👆')
+      } else {
+        toast('Error biométrico', result.error || 'Error desconocido', true)
+        alert('Error biométrico: ' + (result.error || 'Sin detalle'))
+      }
+    } catch(e) {
+      toast('Error', e.message, true)
+      alert('Excepción: ' + e.name + ' — ' + e.message)
     }
   }, 1200)
 }
