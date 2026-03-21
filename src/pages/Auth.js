@@ -6,7 +6,7 @@ import {
   hasPasskeyOnDevice,
   registerPasskey,
   authenticateWithPasskey
-} from '../utils/biometric.js'
+} from '../services/biometric.js'
 
 let bioAvailable = false
 
