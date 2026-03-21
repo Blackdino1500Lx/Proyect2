@@ -756,12 +756,19 @@ async function loadAdmin(container) {
   document.getElementById('btn-add-wk').addEventListener('click', async () => {
     const title = document.getElementById('wk-title').value.trim()
     const date  = document.getElementById('wk-date').value
-    const who   = document.getElementById('wk-who').value.trim()
+    const who   = document.getElementById('wk-who').value
     const notes = document.getElementById('wk-notes').value.trim()
     if (!title || !date) { toast('Error', 'Completa el trabajo y la fecha', true); return }
-    await ins('cleaning', { who, date: date, notes: `[MANTENIMIENTO] ${title} — ${notes}` })
+    const { error } = await supabase.from('workprogram').insert({
+      title: `[MANTENIMIENTO] ${title}`,
+      date,
+      who: who || null,
+      notes: notes || null
+    })
+    if (error) { toast('Error', error.message, true); return }
     toast('Trabajo publicado', title)
-    ;['wk-title','wk-who','wk-notes'].forEach(id => document.getElementById(id).value = '')
+    ;['wk-title','wk-notes'].forEach(id => document.getElementById(id).value = '')
+    document.getElementById('wk-who').value = ''
     document.getElementById('wk-date').value = ''
     loadAdmin(container)
   })
