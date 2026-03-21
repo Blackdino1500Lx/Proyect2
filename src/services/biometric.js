@@ -103,7 +103,10 @@ export async function registerPasskey(userId, userName) {
 // ── Autenticar con passkey existente ──────────────────────────
 export async function authenticateWithPasskey() {
   try {
-    const challenge = crypto.getRandomValues(new Uint8Array(32))
+    const challenge    = crypto.getRandomValues(new Uint8Array(32))
+    const savedCredId  = localStorage.getItem('pizarra_passkey_id')
+
+    if (!savedCredId) return { success: false, error: 'No hay credencial guardada en este dispositivo' }
 
     const assertion = await navigator.credentials.get({
       publicKey: {
@@ -111,14 +114,17 @@ export async function authenticateWithPasskey() {
         rpId: RP_ID,
         userVerification: 'required',
         timeout: 60000,
+        allowCredentials: [{
+          id:         base64ToBuffer(savedCredId),
+          type:       'public-key',
+          transports: ['internal'],
+        }]
       }
     })
 
     if (!assertion) return { success: false, error: 'Autenticación cancelada' }
 
     const credentialId = bufferToBase64(assertion.rawId)
-
-    // Buscar la passkey en Supabase usando función RPC pública
     const { data, error } = await supabase
       .rpc('get_passkey_user', { cred_id: credentialId })
 
