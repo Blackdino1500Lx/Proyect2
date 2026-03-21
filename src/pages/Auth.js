@@ -2,16 +2,21 @@ import { login, register } from '../services/auth.js'
 import { supabase } from '../config/supabase.js'
 import { toast } from '../utils/helpers.js'
 import {
-  isBiometricSupported,
-  hasPasskeyOnDevice,
+  isBiometricAvailable,
+  hasPasskey,
   registerPasskey,
-  authenticateWithPasskey,
-  removePasskey
-} from '../utils/biometric.js'
+  authenticateWithPasskey
+} from '../services/biometric.js'
 
-export function renderAuth() {
-  const hasBio   = isBiometricSupported() && hasPasskeyOnDevice()
-  const showBio  = isBiometricSupported()
+let bioAvailable = false
+
+export async function renderAuth() {
+  // Verificar soporte biométrico
+  bioAvailable = await isBiometricAvailable()
+
+  // Verificar si hay passkey guardada en localStorage
+  const savedUserId = localStorage.getItem('pizarra_passkey_uid')
+  const hasBio = bioAvailable && savedUserId
 
   document.getElementById('auth-screen').innerHTML = `
     <div class="auth-wrap">
@@ -23,10 +28,9 @@ export function renderAuth() {
       <div class="auth-card">
 
         ${hasBio ? `
-        <!-- Acceso biométrico rápido -->
         <button class="btn-bio" id="btn-biometric">
-          <span style="font-size:1.4rem">👆</span>
-          <span>Acceder con huella / Face ID</span>
+          <span style="font-size:1.5rem">👆</span>
+          <span>Entrar con huella / Face ID</span>
         </button>
         <div class="bio-divider"><span>o usa tu contraseña</span></div>
         ` : ''}
@@ -54,31 +58,37 @@ export function renderAuth() {
         </div>
 
       </div>
+      ${hasBio ? `<div style="text-align:center;margin-top:.75rem"><button id="btn-remove-bio" style="background:none;border:none;color:var(--text3);font-size:.75rem;cursor:pointer;font-family:var(--sans)">Quitar acceso biométrico</button></div>` : ''}
     </div>`
 
-  // Biometric login
+  // Botón biométrico
   document.getElementById('btn-biometric')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-biometric')
     btn.disabled = true
-    btn.innerHTML = '<span class="spin" style="border-top-color:white;border-color:rgba(255,255,255,.3)"></span><span>Verificando...</span>'
+    btn.innerHTML = '<span class="spin" style="width:18px;height:18px;border-top-color:white;border-color:rgba(255,255,255,.3)"></span><span>Verificando...</span>'
     try {
-      const { userId } = await authenticateWithPasskey()
-      // Obtener perfil del usuario
+      const result = await authenticateWithPasskey()
+      if (!result.success) throw new Error(result.error)
       const { data: profile } = await supabase
-        .from('users')
-        .select('*, groups(*)')
-        .eq('id', userId)
-        .single()
+        .from('users').select('*, groups(*)').eq('id', result.userId).single()
       if (!profile) throw new Error('Perfil no encontrado')
       window.__onLogin({ ...profile, group: profile.groups })
     } catch(e) {
-      toast('Error biométrico', e.message, true)
+      toast('Error', e.message, true)
       btn.disabled = false
-      btn.innerHTML = '<span style="font-size:1.4rem">👆</span><span>Acceder con huella / Face ID</span>'
+      btn.innerHTML = '<span style="font-size:1.5rem">👆</span><span>Entrar con huella / Face ID</span>'
     }
   })
 
-  // Tab switching
+  // Quitar biometría
+  document.getElementById('btn-remove-bio')?.addEventListener('click', () => {
+    if (!confirm('¿Quitar el acceso biométrico de este dispositivo?')) return
+    localStorage.removeItem('pizarra_passkey_uid')
+    renderAuth()
+    toast('Listo', 'Acceso biométrico desactivado')
+  })
+
+  // Tabs
   document.getElementById('tab-login').addEventListener('click', () => switchTab('login'))
   document.getElementById('tab-reg').addEventListener('click',   () => switchTab('register'))
 
@@ -94,20 +104,23 @@ export function renderAuth() {
     try {
       const userData = await login(email, pass)
       window.__onLogin(userData)
+      // Ofrecer biometría después del login si está disponible y no está configurada
+      if (bioAvailable && !localStorage.getItem('pizarra_passkey_uid')) {
+        offerBiometricSetup(userData.id, userData.name || userData.email)
+      }
     } catch(e) {
       err.textContent = e.message
       err.style.display = 'block'
+      btn.textContent = 'Iniciar sesión'
+      btn.disabled    = false
     }
-    btn.textContent = 'Iniciar sesión'
-    btn.disabled    = false
   })
 
-  // Enter key en login
   document.getElementById('l-pass')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('btn-login').click()
   })
 
-  // Register
+  // Registro
   document.getElementById('btn-reg').addEventListener('click', async () => {
     const name  = document.getElementById('r-name').value.trim()
     const email = document.getElementById('r-email').value.trim().toLowerCase()
@@ -142,20 +155,19 @@ function switchTab(tab) {
   document.getElementById('tab-reg').classList.toggle('active',   tab === 'register')
 }
 
-// ── Ofrecer registro de passkey después del login ─────────────
-export async function offerPasskeyRegistration(userId, userName) {
-  if (!isBiometricSupported() || hasPasskeyOnDevice()) return
-
-  // Mostrar prompt después de 1 segundo
-  setTimeout(() => {
+async function offerBiometricSetup(userId, userName) {
+  setTimeout(async () => {
     const confirmed = confirm(
-      '¿Quieres activar el acceso con huella / Face ID en este dispositivo?\n\n' +
+      '¿Quieres activar el acceso con huella / Face ID?\n\n' +
       'La próxima vez podrás entrar sin escribir tu contraseña.'
     )
     if (!confirmed) return
-
-    registerPasskey(userId, userName)
-      .then(() => toast('¡Listo!', 'Acceso biométrico activado en este dispositivo'))
-      .catch(e => toast('Error', e.message, true))
-  }, 1000)
+    const result = await registerPasskey(userId, userName)
+    if (result.success) {
+      localStorage.setItem('pizarra_passkey_uid', userId)
+      toast('¡Listo!', 'Acceso biométrico activado 👆')
+    } else {
+      toast('Error', result.error, true)
+    }
+  }, 1200)
 }

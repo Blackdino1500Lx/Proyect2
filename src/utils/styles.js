@@ -33,6 +33,12 @@ html,body{min-height:100%;background:var(--off);color:var(--text);font-family:va
 .auth-hero h1{font-family:var(--serif);font-size:1.75rem;color:var(--sky3);font-weight:600}
 .auth-hero .cong-name{font-size:.8rem;color:var(--text2);margin-top:.2rem;letter-spacing:.07em;text-transform:uppercase;font-weight:600}
 .auth-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;box-shadow:var(--shadow)}
+.btn-bio{width:100%;display:flex;align-items:center;justify-content:center;gap:.75rem;padding:.85rem;background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;border:none;border-radius:var(--r2);font-family:var(--sans);font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,.3);margin-bottom:1rem}
+.btn-bio:active{transform:scale(.98)}
+.btn-bio:disabled{opacity:.6;cursor:not-allowed}
+.bio-divider{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;color:var(--text3);font-size:.78rem}
+.bio-divider::before,.bio-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.bio-divider span{white-space:nowrap}
 .btn-biometric{width:100%;padding:.82rem;background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;border:none;border-radius:var(--r2);font-family:var(--sans);font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.9rem;box-shadow:0 4px 12px rgba(0,0,0,.2)}
 .btn-biometric:active{transform:scale(.98)}
 .btn-biometric:disabled{opacity:.5;cursor:not-allowed}

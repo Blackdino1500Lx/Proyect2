@@ -32,11 +32,11 @@ const territories = [
 ]
 
 // ── 4. Auth flow ───────────────────────────────────────────────
-window.__showAuth = function() {
+window.__showAuth = async function() {
   CU = null
   document.getElementById('app').style.display = 'none'
   document.getElementById('auth-screen').style.display = 'flex'
-  renderAuth()
+  await renderAuth()
 }
 
 window.__onLogin = async function(userData) {
