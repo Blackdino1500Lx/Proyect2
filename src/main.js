@@ -871,8 +871,20 @@ document.getElementById('btn-install')?.addEventListener('click', async () => {
   if (dPr) { dPr.prompt(); await dPr.userChoice; dPr = null }
   document.getElementById('install-bar')?.classList.remove('show')
 })
-// Service worker desactivado temporalmente
-// if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})
+// Service Worker – soporte offline
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    // Si hay una nueva versión esperando, activarla al recargar
+    reg.addEventListener('updatefound', () => {
+      const nw = reg.installing
+      nw?.addEventListener('statechange', () => {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+          console.log('[SW] Nueva versión disponible')
+        }
+      })
+    })
+  }).catch(err => console.warn('[SW] No se pudo registrar:', err))
+}
 
 // ── 15. Start ──────────────────────────────────────────────────
 window.__showAuth()
