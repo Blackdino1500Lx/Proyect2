@@ -1,6 +1,6 @@
-const CACHE = 'pizarra-v3'
+const CACHE = 'pizarra-v4'
 
-// Archivos del app shell que se precargan al instalar
+// Archivos propios del app — se precargan al instalar
 const PRECACHE = [
   '/',
   '/index.html',
@@ -22,16 +22,31 @@ const PRECACHE = [
   '/src/services/biometric.js',
 ]
 
-// URLs que NUNCA se cachean (siempre van a la red)
-function isNetworkOnly(url) {
-  return url.includes('supabase')          ||
-         url.includes('googleapis')        ||
-         url.includes('tile.openstreetmap') ||
-         url.includes('netlify/functions')  ||
-         url.includes('unpkg.com')
+// URLs externas que SÍ queremos cachear para uso offline
+const CACHEABLE_EXTERNAL = [
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+  'unpkg.com/leaflet',
+  'esm.sh/@supabase',
+]
+
+// URLs externas que NUNCA se cachean (datos en tiempo real)
+const NEVER_CACHE = [
+  'supabase.co',
+  'netlify/functions',
+  'tile.openstreetmap',
+  'placehold.co',
+]
+
+function isNeverCache(url) {
+  return NEVER_CACHE.some(s => url.includes(s))
 }
 
-// ── Install: precargar app shell ──────────────────────────────
+function isCacheableExternal(url) {
+  return CACHEABLE_EXTERNAL.some(s => url.includes(s))
+}
+
+// ── Install: precargar archivos propios ───────────────────────
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
@@ -49,38 +64,58 @@ self.addEventListener('activate', e => {
   )
 })
 
-// ── Fetch: Cache-first para app shell, network-first para datos ─
+// ── Fetch ─────────────────────────────────────────────────────
 self.addEventListener('fetch', e => {
   const url = e.request.url
 
-  // Peticiones de datos/API: intentar red, caer en caché si falla
-  if (isNetworkOnly(url)) {
+  // Solo GET
+  if (e.request.method !== 'GET') return
+
+  // APIs de datos en tiempo real → pasar directo sin SW
+  if (isNeverCache(url)) return
+
+  // Recursos externos cacheables (fuentes, leaflet, supabase-js)
+  if (isCacheableExternal(url)) {
     e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
+      caches.match(e.request).then(cached => {
+        if (cached) return cached
+        // Primera vez con internet: traer y cachear
+        return fetch(e.request).then(res => {
+          if (res && res.status === 200) {
+            const clone = res.clone()
+            caches.open(CACHE).then(c => c.put(e.request, clone))
+          }
+          return res
+        }).catch(() => {
+          // Sin internet y sin caché: no hay nada que hacer, retornar vacío limpio
+          return new Response('', { status: 503, statusText: 'Offline' })
+        })
+      })
     )
     return
   }
 
-  // Solo cachear GET
-  if (e.request.method !== 'GET') return
-
-  // App shell: Cache-first (offline funciona inmediatamente)
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached
-
-      // No está en caché → traer de red y guardar
-      return fetch(e.request).then(res => {
-        if (!res || res.status !== 200 || res.type === 'opaque') return res
-        const clone = res.clone()
-        caches.open(CACHE).then(c => c.put(e.request, clone))
-        return res
-      }).catch(() => {
-        // Sin red y sin caché → página offline de fallback
-        if (e.request.destination === 'document') {
-          return caches.match('/index.html')
-        }
+  // Archivos propios del dominio → Cache-first
+  if (url.startsWith(self.location.origin)) {
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        if (cached) return cached
+        return fetch(e.request).then(res => {
+          if (res && res.status === 200) {
+            const clone = res.clone()
+            caches.open(CACHE).then(c => c.put(e.request, clone))
+          }
+          return res
+        }).catch(() => {
+          if (e.request.destination === 'document') {
+            return caches.match('/index.html')
+          }
+          return new Response('', { status: 503, statusText: 'Offline' })
+        })
       })
-    })
-  )
+    )
+    return
+  }
+
+  // Cualquier otra URL externa no listada → dejar pasar sin interceptar
 })
