@@ -874,7 +874,6 @@ document.getElementById('btn-install')?.addEventListener('click', async () => {
 // Service Worker – soporte offline
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').then(reg => {
-    // Si hay una nueva versión esperando, activarla al recargar
     reg.addEventListener('updatefound', () => {
       const nw = reg.installing
       nw?.addEventListener('statechange', () => {
@@ -885,6 +884,41 @@ if ('serviceWorker' in navigator) {
     })
   }).catch(err => console.warn('[SW] No se pudo registrar:', err))
 }
+
+// Banner de modo offline ────────────────────────────────────────
+function showOfflineBanner() {
+  if (document.getElementById('offline-bar')) return
+  const bar = document.createElement('div')
+  bar.id = 'offline-bar'
+  bar.innerHTML = `
+    <span style="font-size:.95rem">📴</span>
+    <span>Modo sin conexión — los datos pueden no estar actualizados</span>
+    <button id="btn-close-offline" style="background:none;border:none;color:inherit;font-size:1rem;cursor:pointer;margin-left:auto;opacity:.7">✕</button>`
+  // Inyectar keyframe si no existe
+  if (!document.getElementById('offline-bar-style')) {
+    const s = document.createElement('style')
+    s.id = 'offline-bar-style'
+    s.textContent = '@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}'
+    document.head.appendChild(s)
+  }
+  bar.style.cssText = `
+    display:flex;align-items:center;gap:.6rem;
+    padding:.5rem 1rem;
+    background:#1a1a2e;color:#e8eaf6;
+    font-family:var(--sans);font-size:.78rem;font-weight:500;
+    position:sticky;top:0;z-index:9999;
+    animation:slideDown .3s ease;`
+  document.body.insertBefore(bar, document.body.firstChild)
+  document.getElementById('btn-close-offline')?.addEventListener('click', () => bar.remove())
+}
+
+function hideOfflineBanner() {
+  document.getElementById('offline-bar')?.remove()
+}
+
+window.addEventListener('online',  hideOfflineBanner)
+window.addEventListener('offline', showOfflineBanner)
+if (!navigator.onLine) showOfflineBanner()
 
 // ── 15. Start ──────────────────────────────────────────────────
 window.__showAuth()
