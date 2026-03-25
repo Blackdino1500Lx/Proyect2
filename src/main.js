@@ -75,10 +75,10 @@ async function loadMeetingsPage(container) {
   container.innerHTML = `<div class="page active" id="page-meetings">
     <div class="section-hd"><h2 class="section-title">Reuniones</h2></div>
     <div class="meet-type-tabs" style="margin-bottom:1rem">
-      <button class="mtt ${tab==='midweek'?'active':''}"   id="mtab-midweek">📅 Entre Semana</button>
-      <button class="mtt ${tab==='weekend'?'active':''}"   id="mtab-weekend">⛪ Fin de Semana</button>
-      <button class="mtt ${tab==='ann'?'active':''}"       id="mtab-ann">📢 Anuncios</button>
-      <button class="mtt ${tab==='assign'?'active':''}"    id="mtab-assign">📋 Asignaciones</button>
+      <button class="mtt ${tab==='midweek'?'active':''}"   id="mtab-midweek"> Entre Semana</button>
+      <button class="mtt ${tab==='weekend'?'active':''}"   id="mtab-weekend"> Fin de Semana</button>
+      <button class="mtt ${tab==='ann'?'active':''}"       id="mtab-ann"> Anuncios</button>
+      <button class="mtt ${tab==='assign'?'active':''}"    id="mtab-assign"> Asignaciones</button>
     </div>
     <div id="meetings-tab-content"></div>
   </div>`
@@ -109,9 +109,9 @@ async function loadProgramsPage(container) {
   container.innerHTML = `<div class="page active" id="page-programs">
     <div class="section-hd"><h2 class="section-title">Programas</h2></div>
     <div class="meet-type-tabs" style="margin-bottom:1rem">
-      <button class="mtt ${tab==='cleaning'?'active':''}"  id="ptab-cleaning">🧹 Limpieza</button>
-      <button class="mtt ${tab==='service'?'active':''}"   id="ptab-service">🎙️ Servicio</button>
-      <button class="mtt ${tab==='maint'?'active':''}"     id="ptab-maint">🔧 Mantenimiento</button>
+      <button class="mtt ${tab==='cleaning'?'active':''}"  id="ptab-cleaning"> Limpieza</button>
+      <button class="mtt ${tab==='service'?'active':''}"   id="ptab-service"> Servicio</button>
+      <button class="mtt ${tab==='maint'?'active':''}"     id="ptab-maint"> Mantenimiento</button>
     </div>
     <div id="programs-tab-content"></div>
   </div>`
@@ -490,7 +490,7 @@ async function loadAdminReports(container) {
   container.innerHTML = `
     <div class="card" style="margin-top:.5rem">
       <div class="card-hd">
-        <span class="card-title">📊 Informes de la congregación — ${MONTHS[month]} ${year}</span>
+        <span class="card-title"> Informes de la congregación — ${MONTHS[month]} ${year}</span>
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
@@ -501,7 +501,7 @@ async function loadAdminReports(container) {
               const grp = groups.find(g => g.id === u.group_id)
               return `<tr>
                 <td><strong>${u.name || '—'}</strong></td>
-                <td>${grp ? `<span class="group-pill">👨‍👩‍👧 ${grp.name}</span>` : '—'}</td>
+                <td>${grp ? `<span class="group-pill"> ${grp.name}</span>` : '—'}</td>
                 <td>${rep ? rep.hours : '—'}</td>
                 <td>${rep ? rep.revisits : '—'}</td>
                 <td>${rep ? rep.studies : '—'}</td>
@@ -518,9 +518,9 @@ async function loadAdminReports(container) {
       <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap">
         <div class="year-ring"><div class="num">${yearReps.length}</div><div class="lbl">informes</div></div>
         <div class="g3" style="flex:1">
-          <div class="stat"><div class="stat-icon">⏱️</div><div><div class="stat-val">${yearReps.reduce((s,r)=>s+(r.hours||0),0)}</div><div class="stat-lbl">Horas totales</div></div></div>
-          <div class="stat"><div class="stat-icon">📖</div><div><div class="stat-val">${yearReps.reduce((s,r)=>s+(r.studies||0),0)}</div><div class="stat-lbl">Estudios</div></div></div>
-          <div class="stat"><div class="stat-icon">🔄</div><div><div class="stat-val">${yearReps.reduce((s,r)=>s+(r.revisits||0),0)}</div><div class="stat-lbl">Revisitas</div></div></div>
+          <div class="stat"><div class="stat-icon">⏱</div><div><div class="stat-val">${yearReps.reduce((s,r)=>s+(r.hours||0),0)}</div><div class="stat-lbl">Horas totales</div></div></div>
+          <div class="stat"><div class="stat-icon"></div><div><div class="stat-val">${yearReps.reduce((s,r)=>s+(r.studies||0),0)}</div><div class="stat-lbl">Estudios</div></div></div>
+          <div class="stat"><div class="stat-icon"></div><div><div class="stat-val">${yearReps.reduce((s,r)=>s+(r.revisits||0),0)}</div><div class="stat-lbl">Revisitas</div></div></div>
         </div>
       </div>
     </div>`
@@ -546,14 +546,14 @@ async function loadAdmin(container) {
   container.innerHTML = `<div class="page active" id="page-admin">
     <div class="section-hd"><h2 class="section-title">Panel de Administración</h2></div>
     <div class="g3" style="margin-bottom:1.3rem">
-      <div class="stat"><div class="stat-icon">👥</div><div><div class="stat-val">${users.length}</div><div class="stat-lbl">Usuarios</div></div></div>
-      <div class="stat"><div class="stat-icon">🛡️</div><div><div class="stat-val">${users.filter(u=>u.role==='admin').length}</div><div class="stat-lbl">Administradores</div></div></div>
-      <div class="stat"><div class="stat-icon">👨‍👩‍👧</div><div><div class="stat-val">${groups.length}</div><div class="stat-lbl">Grupos</div></div></div>
+      <div class="stat"><div class="stat-icon"></div><div><div class="stat-val">${users.length}</div><div class="stat-lbl">Usuarios</div></div></div>
+      <div class="stat"><div class="stat-icon"></div><div><div class="stat-val">${users.filter(u=>u.role==='admin').length}</div><div class="stat-lbl">Administradores</div></div></div>
+      <div class="stat"><div class="stat-icon"></div><div><div class="stat-val">${groups.length}</div><div class="stat-lbl">Grupos</div></div></div>
     </div>
 
     <!-- Grupos -->
     <div class="card">
-      <div class="card-hd"><span class="card-title">👨‍👩‍👧 Gestión de Grupos</span></div>
+      <div class="card-hd"><span class="card-title"> Gestión de Grupos</span></div>
       <div class="g2" style="margin-bottom:.9rem">
         <div class="fg"><label>Nombre del grupo</label><input type="text" id="grp-name" placeholder="Ej: Grupo Norte"/></div>
         <div class="fg"><label>Responsable</label>${brotherSel('grp-captain')}</div>
@@ -584,7 +584,7 @@ async function loadAdmin(container) {
 
     <!-- Nuevo Anuncio -->
     <div class="card">
-      <div class="card-hd"><span class="card-title">📢 Nuevo Anuncio</span></div>
+      <div class="card-hd"><span class="card-title"> Nuevo Anuncio</span></div>
       <div class="g2">
         <div class="fg"><label>Título</label><input type="text" id="an-title" placeholder="Título del anuncio"/></div>
         <div class="fg"><label>Prioridad</label><select id="an-pri"><option value="normal">Normal</option><option value="urgent">Urgente</option><option value="info">Informativo</option></select></div>
@@ -595,7 +595,7 @@ async function loadAdmin(container) {
 
     <!-- Limpieza -->
     <div class="card">
-      <div class="card-hd"><span class="card-title">🧹 Programa de Limpieza</span></div>
+      <div class="card-hd"><span class="card-title"> Programa de Limpieza</span></div>
       <div class="g2">
         <div class="fg"><label>Grupo</label>
           <select id="cl-group" style="width:100%;padding:.45rem .6rem;border:1.5px solid var(--border);border-radius:var(--r2);font-family:var(--sans);font-size:.9rem;background:var(--white);color:var(--text)">
@@ -612,7 +612,7 @@ async function loadAdmin(container) {
 
     <!-- Programa de Servicio -->
     <div class="card">
-      <div class="card-hd"><span class="card-title">🎙️ Programa de Servicio</span></div>
+      <div class="card-hd"><span class="card-title"> Programa de Servicio</span></div>
       <p style="font-size:.81rem;color:var(--text2);margin-bottom:.9rem">Roles de servicio para la reunión: acomodadores, micrófonos, sonido, etc.</p>
       <div class="g2">
         <div class="fg"><label>Fecha de la reunión</label><input type="date" id="sv-date"/></div>
@@ -624,12 +624,12 @@ async function loadAdmin(container) {
         </div>
       </div>
       <div class="g2">
-        <div class="fg"><label>🎙️ Sonido</label>${brotherSel('sv-sound')}</div>
-        <div class="fg"><label>🎤 Micrófonos</label>${brotherSel('sv-mic')}</div>
-        <div class="fg"><label>🚪 Acomodador(es)</label>${brotherSel('sv-usher')}</div>
-        <div class="fg"><label>📹 Zoom / Transmisión</label>${brotherSel('sv-zoom')}</div>
-        <div class="fg"><label>📖 Indicador de plataforma</label>${brotherSel('sv-platform')}</div>
-        <div class="fg"><label>🔧 Otro rol</label><input type="text" id="sv-other" placeholder="Rol: Nombre..."/></div>
+        <div class="fg"><label> Sonido</label>${brotherSel('sv-sound')}</div>
+        <div class="fg"><label> Micrófonos</label>${brotherSel('sv-mic')}</div>
+        <div class="fg"><label> Acomodador(es)</label>${brotherSel('sv-usher')}</div>
+        <div class="fg"><label> Zoom / Transmisión</label>${brotherSel('sv-zoom')}</div>
+        <div class="fg"><label> Indicador de plataforma</label>${brotherSel('sv-platform')}</div>
+        <div class="fg"><label> Otro rol</label><input type="text" id="sv-other" placeholder="Rol: Nombre..."/></div>
       </div>
       <button class="btn-action" id="btn-add-sv">Publicar programa</button>
     </div>
