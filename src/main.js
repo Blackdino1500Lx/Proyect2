@@ -201,47 +201,84 @@ async function loadAnnouncements(container) {
 
 // ── 9. ASSIGNMENTS ─────────────────────────────────────────────
 async function loadAssignments(container) {
-  const wk = curWeek()
-  const all = await get('assignments')
-  const week = all.filter(a => a.week === wk)
-  const admin = CU?.role === 'admin'
-  const myEmail = CU?.email || ''
-  const COLORS = ['#4a90d9','#2e9e6b','#c07820','#c0405a','#7a55c8']
+  const myName = (CU?.name || '').trim().toLowerCase()
+  // Usar el primer nombre para comparar (ej: "Pedro González" → "pedro")
+  const myFirst = myName.split(' ')[0]
+
+  // Leer semanas desde meeting_weeks
+  let weeks = []
+  if (!DEMO_MODE) {
+    const { data } = await supabase.from('meeting_weeks').select('*').order('sort_order', { ascending: true })
+    weeks = data || []
+  }
+
+  // Por cada semana, buscar si YO tengo alguna asignación en:
+  //   · Lectura bíblica (tipo 'reading' en TESOROS DE LA BIBLIA)
+  //   · Cualquier ítem de SEAMOS MEJORES MAESTROS
+  // Si tengo asignación → mostrar la tarjeta de esa semana con mi(s) participación(es)
+
+  const myWeeks = []
+
+  weeks.forEach(w => {
+    const asgn     = w.assignments || {}
+    const sections = w.sections    || []
+    const mine     = []
+
+    sections.forEach(sec => {
+      const isMMT     = sec.name === 'SEAMOS MEJORES MAESTROS'
+      const isTesoros = sec.name === 'TESOROS DE LA BIBLIA'
+      ;(sec.items || []).forEach(item => {
+        const isReading = isTesoros && item.type === 'reading'
+        if (!isReading && !isMMT) return
+
+        const aKey = 'item_' + item.number
+        const hKey = 'help_' + item.number
+        const icon = isMMT ? '📚' : '📖'
+
+        // Comprobar si mi nombre está en esta asignación
+        if (asgn[aKey] && asgn[aKey].trim().toLowerCase().includes(myFirst)) {
+          mine.push({ role: `${icon} ${item.title}`, label: isMMT ? 'Participante' : 'Lectura bíblica' })
+        }
+        if (asgn[hKey] && asgn[hKey].trim().toLowerCase().includes(myFirst)) {
+          mine.push({ role: `${icon} ${item.title}`, label: 'Ayudante' })
+        }
+      })
+    })
+
+    if (mine.length) myWeeks.push({ week: w, mine })
+  })
+
+  // ── Render ──
+  const blocksHTML = myWeeks.map(({ week: w, mine }) => {
+    const rows = mine.map(a => `
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.55rem 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:1.1rem;flex-shrink:0">${a.role.split(' ')[0]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:.88rem;color:var(--text)">${a.role.slice(a.role.indexOf(' ')+1)}</div>
+          <div style="font-size:.75rem;color:var(--sky3);font-weight:600">${a.label}</div>
+        </div>
+        <span class="badge b-sky" style="font-size:.68rem">Tu participación</span>
+      </div>`).join('')
+
+    return `<div class="card" style="margin-bottom:.9rem;border-left:4px solid var(--sky)">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
+        <span style="font-size:.8rem;font-weight:700;color:var(--sky3)">📅 ${w.date_range}</span>
+      </div>
+      ${rows}
+    </div>`
+  }).join('')
+
+  const emptyHTML = myName
+    ? `<div class="empty"><span class="emic">📋</span><p>No tienes asignaciones en las semanas cargadas</p></div>`
+    : `<div class="empty"><span class="emic">📋</span><p>No se pudo identificar tu nombre de usuario</p></div>`
 
   container.innerHTML = `<div class="page active" id="page-assignments">
     <div class="section-hd">
-      <h2 class="section-title">Asignaciones</h2>
-      <span class="badge b-sky">Semana ${wk}</span>
+      <h2 class="section-title">Mis asignaciones</h2>
+      ${myWeeks.length ? `<span class="badge b-green">&#10003; ${myWeeks.length} semana${myWeeks.length>1?'s':''}</span>` : ''}
     </div>
-    <div class="card">
-      ${week.map((a, i) => {
-        const mine = a.email === myEmail
-        const ini  = a.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)
-        const c    = COLORS[i % COLORS.length]
-        return `<div class="as-row" style="${mine ? 'background:var(--sky-bg);border-radius:10px;padding:.75rem .6rem;margin:0 -.6rem' : ''}">
-          <div class="as-left">
-            <div class="avatar" style="background:${c}1a;color:${c};border:2px solid ${c}44">${ini}</div>
-            <div>
-              <div style="font-weight:700;color:${mine ? 'var(--sky3)' : 'var(--text)'}">${a.name} ${mine ? '<span style="font-size:.71rem;color:var(--sky);font-weight:600">(Tú)</span>' : ''}</div>
-              <div style="font-size:.8rem;color:var(--text2)">${a.role}</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:.45rem">
-            ${mine ? '<span class="badge b-sky">Tu asignación</span>' : ''}
-            ${admin ? `<button class="btn-sm danger" data-del-as="${a.id}">✕</button>` : ''}
-          </div>
-        </div>`
-      }).join('') || '<div class="empty"><span class="emic">📋</span><p>Sin asignaciones esta semana</p></div>'}
-    </div>
+    ${blocksHTML || emptyHTML}
   </div>`
-
-  container.querySelectorAll('[data-del-as]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await del('assignments', btn.dataset.delAs)
-      toast('Eliminado', 'Asignación eliminada')
-      loadAssignments(container)
-    })
-  })
 }
 
 // ── 10. PROGRAMS (subpages sin botón back) ─────────────────────
