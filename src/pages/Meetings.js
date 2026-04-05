@@ -24,12 +24,14 @@ function makeSelect(cls, weekId, dataAttr, dataVal, value, users, filter) {
 // ── Persistencia ──────────────────────────────────────────────
 async function saveWeeks(weeks) {
   if (DEMO_MODE) { localStorage.setItem(LS_KEY, JSON.stringify(weeks)); return }
-  for (const w of weeks) {
+  for (let i = 0; i < weeks.length; i++) {
+    const w = weeks[i]
     await supabase.from('meeting_weeks').upsert({
       id: w.supabase_id || undefined,
       date_range: w.dateRange, bible_reading: w.bibleReading,
       opening_song: w.openingSong, mid_song: w.midSong, closing_song: w.closingSong,
       sections: w.sections, assignments: w.assignments || {}, roles: w.roles || {},
+      sort_order: i,
       updated_at: new Date().toISOString()
     }, { onConflict: 'date_range' })
   }
@@ -39,7 +41,7 @@ async function fetchWeeks() {
   if (DEMO_MODE) {
     try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] }
   }
-  const { data, error } = await supabase.from('meeting_weeks').select('*').order('date_range', { ascending: true })
+  const { data, error } = await supabase.from('meeting_weeks').select('*').order('sort_order', { ascending: true }).order('date_range', { ascending: true })
   if (error) { console.error(error); return [] }
   return (data || []).map(r => ({
     id: r.date_range.replace(/\s/g, '-').toLowerCase(),

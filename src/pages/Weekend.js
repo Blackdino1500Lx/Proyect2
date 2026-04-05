@@ -171,16 +171,16 @@ function buildMeetingCard(m, isAdmin, users) {
 
         <!-- Roles -->
         <div style="background:var(--sky-bg);border-radius:var(--r2);padding:.6rem .85rem;margin-bottom:.75rem;border:1px solid var(--border2)">
-          ${row('🎙️','Presidente', m.presidente)}
-          ${row('🙏','Oracion apertura', m.oracion_apertura)}
+          ${row('Presidente', m.presidente)}
+          ${row('Oracion apertura', m.oracion_apertura)}
           <div style="font-size:.7rem;color:var(--text3);padding:.25rem 0">Cantico ${m.opening_song || '—'}</div>
         </div>
 
         <!-- Discurso -->
         <div style="background:#fff8f0;border-radius:var(--r2);padding:.6rem .85rem;margin-bottom:.75rem;border:1px solid #f5d5a0">
           <div style="font-size:.68rem;font-weight:700;color:#c07820;text-transform:uppercase;margin-bottom:.4rem">Discurso Publico</div>
-          ${row('📢','Tema', m.talk_theme)}
-          ${row('👤','Discursante', m.talk_speaker)}
+          ${row('Tema', m.talk_theme)}
+          ${row('Discursante', m.talk_speaker)}
         </div>
 
         <div style="font-size:.7rem;color:var(--text3);padding:.2rem .85rem">Cantico ${m.mid_song || '—'}</div>
@@ -188,15 +188,15 @@ function buildMeetingCard(m, isAdmin, users) {
         <!-- Atalaya -->
         <div style="background:#f0f8ff;border-radius:var(--r2);padding:.6rem .85rem;margin-top:.4rem;border:1px solid var(--border2)">
           <div style="font-size:.68rem;font-weight:700;color:#4a90d9;text-transform:uppercase;margin-bottom:.4rem">Estudio de La Atalaya</div>
-          ${row('📖','Tema', m.study_theme)}
-          ${row('🎤','Conductor', m.study_conductor)}
-          ${row('📚','Lector', m.study_reader)}
+          ${row('Tema', m.study_theme)}
+          ${row('Conductor', m.study_conductor)}
+          ${row('Lector', m.study_reader)}
           <div style="font-size:.7rem;color:var(--text3);padding:.25rem 0">Cantico ${m.mid_song || '—'}</div>
         </div>
 
         <!-- Cierre -->
         <div style="background:var(--sky-bg);border-radius:var(--r2);padding:.6rem .85rem;margin-top:.75rem;border:1px solid var(--border2)">
-          ${row('🙏','Oracion cierre', m.oracion_cierre)}
+          ${row('Oracion cierre', m.oracion_cierre)}
           <div style="font-size:.7rem;color:var(--text3);padding:.25rem 0">Cantico ${m.closing_song || '—'} · Palabras de conclusion</div>
         </div>
 
