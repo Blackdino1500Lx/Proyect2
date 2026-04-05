@@ -1,6 +1,27 @@
 import { toast } from '../utils/helpers.js'
 import { supabase } from '../config/supabase.js'
 
+const FIELD_ENABLED_KEY = 'field_module_enabled'
+
+// ── Configuración del módulo ──────────────────────────────────
+async function getFieldEnabled() {
+  const { data } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', FIELD_ENABLED_KEY)
+    .single()
+  // Si no existe el registro, asumir habilitado por defecto
+  if (!data) return true
+  return data.value === 'true' || data.value === true
+}
+
+async function setFieldEnabled(enabled) {
+  await supabase.from('app_settings').upsert(
+    { key: FIELD_ENABLED_KEY, value: String(enabled) },
+    { onConflict: 'key' }
+  )
+}
+
 async function fetchTerritories() {
   const { data } = await supabase.from('territories').select('*').order('number')
   return data || []
@@ -47,7 +68,23 @@ function getWeekDays(weekStart) {
 
 export async function renderField(container, currentUser) {
   const isAdmin = currentUser?.role === 'admin'
+
   container.innerHTML = '<div class="page active" id="page-field"><div class="section-hd"><h2 class="section-title">Predicacion</h2></div><div class="empty"><span class="spin" style="width:24px;height:24px;border-top-color:var(--sky);border-color:var(--border2)"></span></div></div>'
+
+  // Verificar si el módulo está habilitado
+  const fieldEnabled = await getFieldEnabled()
+
+  // Si NO es admin y el módulo está deshabilitado, mostrar mensaje
+  if (!fieldEnabled && !isAdmin) {
+    container.innerHTML = `<div class="page active" id="page-field">
+      <div class="section-hd"><h2 class="section-title">Predicacion</h2></div>
+      <div class="empty" style="flex-direction:column;gap:.75rem;padding:2rem 1rem">
+        <span style="font-size:2rem">📋</span>
+        <p style="text-align:center;color:var(--text2);font-size:.9rem">El modulo de predicacion no esta disponible en este momento.</p>
+      </div>
+    </div>`
+    return
+  }
 
   const today = new Date().toISOString().split('T')[0]
   const weekStart = getWeekStart(today)
@@ -149,8 +186,36 @@ export async function renderField(container, currentUser) {
       '</div></div>'
   }).join('')
 
+  // Toggle admin para habilitar/deshabilitar módulo
+  const adminToggle = isAdmin ? `
+    <div class="card" style="padding:.75rem 1rem;margin-bottom:1rem;border-color:${fieldEnabled ? 'var(--border2)' : '#f87171'};background:${fieldEnabled ? 'var(--off)' : '#fff1f1'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.75rem">
+        <div>
+          <div style="font-size:.8rem;font-weight:700;color:var(--text)">Modulo de Predicacion</div>
+          <div style="font-size:.72rem;color:var(--text3)">Visible para todos los usuarios</div>
+        </div>
+        <label class="field-toggle-label" style="position:relative;display:inline-flex;align-items:center;cursor:pointer;flex-shrink:0">
+          <input type="checkbox" id="field-module-toggle" ${fieldEnabled ? 'checked' : ''} style="position:absolute;opacity:0;width:0;height:0"/>
+          <span class="field-toggle-track" style="
+            display:block;width:44px;height:24px;border-radius:12px;
+            background:${fieldEnabled ? '#2e9e6b' : '#d1d5db'};
+            transition:background .2s;position:relative">
+            <span class="field-toggle-thumb" style="
+              position:absolute;top:3px;left:${fieldEnabled ? '23px' : '3px'};
+              width:18px;height:18px;border-radius:50%;background:white;
+              transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)">
+            </span>
+          </span>
+        </label>
+      </div>
+      <div id="toggle-status" style="font-size:.72rem;margin-top:.4rem;color:${fieldEnabled ? '#2e9e6b' : '#f87171'};font-weight:600">
+        ${fieldEnabled ? '✅ Habilitado' : '🔴 Deshabilitado'}
+      </div>
+    </div>` : ''
+
   container.innerHTML = '<div class="page active" id="page-field">' +
     '<div class="section-hd"><h2 class="section-title">Predicacion</h2></div>' +
+    adminToggle +
     '<div class="meet-type-tabs" style="margin-bottom:1rem">' +
     '<button class="mtt active" id="ftab-week">Esta semana</button>' +
     '<button class="mtt" id="ftab-territories">Territorios</button>' +
@@ -173,6 +238,33 @@ export async function renderField(container, currentUser) {
     '<div id="ter-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);padding:1rem;overflow-y:auto">' +
     '<div id="ter-modal-content" style="background:var(--white);border-radius:var(--r);max-width:480px;margin:2rem auto;padding:1.4rem"></div></div>' +
     '</div>'
+
+  // Toggle event
+  if (isAdmin) {
+    const toggleInput = container.querySelector('#field-module-toggle')
+    toggleInput?.addEventListener('change', async function() {
+      const enabled = toggleInput.checked
+      const track = container.querySelector('.field-toggle-track')
+      const thumb = container.querySelector('.field-toggle-thumb')
+      const status = container.querySelector('#toggle-status')
+      const card = toggleInput.closest('.card')
+
+      if (track) track.style.background = enabled ? '#2e9e6b' : '#d1d5db'
+      if (thumb) thumb.style.left = enabled ? '23px' : '3px'
+      if (status) {
+        status.textContent = enabled ? '✅ Habilitado' : '🔴 Deshabilitado'
+        status.style.color = enabled ? '#2e9e6b' : '#f87171'
+      }
+      if (card) {
+        card.style.borderColor = enabled ? 'var(--border2)' : '#f87171'
+        card.style.background = enabled ? 'var(--off)' : '#fff1f1'
+      }
+
+      await setFieldEnabled(enabled)
+      toast(enabled ? 'Modulo habilitado' : 'Modulo deshabilitado',
+            enabled ? 'Los usuarios pueden ver Predicacion' : 'Modulo oculto para usuarios')
+    })
+  }
 
   attachEvents(container, isAdmin, territories, schedule, zoom, users, weekStart, currentUser)
 }
@@ -211,7 +303,6 @@ function attachEvents(container, isAdmin, territories, schedule, zoom, users, we
 
   if (!isAdmin) return
 
-  // Guardar día campo
   container.querySelectorAll('.btn-save-day').forEach(function(btn) {
     btn.addEventListener('click', async function() {
       const date    = btn.dataset.date
@@ -232,7 +323,6 @@ function attachEvents(container, isAdmin, territories, schedule, zoom, users, we
     })
   })
 
-  // Eliminar día campo
   container.querySelectorAll('.btn-del-day').forEach(function(btn) {
     btn.addEventListener('click', async function(e) {
       e.stopPropagation()
@@ -243,7 +333,6 @@ function attachEvents(container, isAdmin, territories, schedule, zoom, users, we
     })
   })
 
-  // Guardar Zoom
   container.querySelectorAll('.btn-save-zoom').forEach(function(btn) {
     btn.addEventListener('click', async function() {
       const date    = btn.dataset.date
@@ -263,7 +352,6 @@ function attachEvents(container, isAdmin, territories, schedule, zoom, users, we
     })
   })
 
-  // Eliminar Zoom
   container.querySelectorAll('.btn-del-zoom').forEach(function(btn) {
     btn.addEventListener('click', async function(e) {
       e.stopPropagation()
@@ -274,7 +362,6 @@ function attachEvents(container, isAdmin, territories, schedule, zoom, users, we
     })
   })
 
-  // Registrar avance
   container.querySelectorAll('.btn-save-progress').forEach(function(btn) {
     btn.addEventListener('click', async function() {
       const terId   = btn.dataset.ter

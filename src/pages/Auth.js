@@ -7,14 +7,15 @@ import {
   registerPasskey,
   authenticateWithPasskey
 } from '../services/biometric.js'
+import {
+  subscribeToPush,
+  listenForConfirmations
+} from '../services/notifications.js'
 
 let bioAvailable = false
 
 export async function renderAuth() {
-  // Verificar soporte biométrico
   bioAvailable = isBiometricSupported()
-
-  // Verificar si hay passkey guardada en localStorage
   const hasBio = bioAvailable && hasPasskeyOnDevice()
 
   document.getElementById('auth-screen').innerHTML = `
@@ -60,7 +61,7 @@ export async function renderAuth() {
       ${hasBio ? `<div style="text-align:center;margin-top:.75rem"><button id="btn-remove-bio" style="background:none;border:none;color:var(--text3);font-size:.75rem;cursor:pointer;font-family:var(--sans)">Quitar acceso biométrico</button></div>` : ''}
     </div>`
 
-  // Botón biométrico
+  // ── Biométrico ────────────────────────────────────────────
   document.getElementById('btn-biometric')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-biometric')
     btn.disabled = true
@@ -73,7 +74,7 @@ export async function renderAuth() {
       const { data: profile } = await supabase
         .from('users').select('*, groups(*)').eq('id', userId).single()
       if (!profile) throw new Error('Perfil no encontrado')
-      window.__onLogin({ ...profile, group: profile.groups })
+      await onLoginSuccess({ ...profile, group: profile.groups })
     } catch(e) {
       toast('Error', e.message, true)
       btn.disabled = false
@@ -81,7 +82,7 @@ export async function renderAuth() {
     }
   })
 
-  // Quitar biometría
+  // ── Quitar biometría ──────────────────────────────────────
   document.getElementById('btn-remove-bio')?.addEventListener('click', () => {
     if (!confirm('¿Quitar el acceso biométrico de este dispositivo?')) return
     localStorage.removeItem('pizarra_passkey_id')
@@ -89,11 +90,11 @@ export async function renderAuth() {
     toast('Listo', 'Acceso biométrico desactivado')
   })
 
-  // Tabs
+  // ── Tabs ──────────────────────────────────────────────────
   document.getElementById('tab-login').addEventListener('click', () => switchTab('login'))
   document.getElementById('tab-reg').addEventListener('click',   () => switchTab('register'))
 
-  // Login normal
+  // ── Login normal ──────────────────────────────────────────
   document.getElementById('btn-login').addEventListener('click', async () => {
     const email = document.getElementById('l-email').value.trim().toLowerCase()
     const pass  = document.getElementById('l-pass').value
@@ -104,8 +105,8 @@ export async function renderAuth() {
     btn.disabled  = true
     try {
       const userData = await login(email, pass)
-      window.__onLogin(userData)
-      // Ofrecer biometría después del login si está disponible y no está configurada
+      await onLoginSuccess(userData)
+      // Ofrecer biometría si está disponible y no está configurada
       if (bioAvailable && !localStorage.getItem('pizarra_passkey_id')) {
         offerBiometricSetup(userData.id, userData.name || userData.email)
       }
@@ -121,7 +122,7 @@ export async function renderAuth() {
     if (e.key === 'Enter') document.getElementById('btn-login').click()
   })
 
-  // Registro
+  // ── Registro ──────────────────────────────────────────────
   document.getElementById('btn-reg').addEventListener('click', async () => {
     const name  = document.getElementById('r-name').value.trim()
     const email = document.getElementById('r-email').value.trim().toLowerCase()
@@ -147,6 +148,27 @@ export async function renderAuth() {
     btn.textContent = 'Crear cuenta'
     btn.disabled    = false
   })
+}
+
+// ── Post-login: push + confirmaciones ─────────────────────────
+async function onLoginSuccess(userData) {
+  // Suscribir a notificaciones push (pide permiso la primera vez)
+  try {
+    await subscribeToPush(userData.id)
+  } catch(e) {
+    console.warn('Push no disponible:', e)
+  }
+
+  // Escuchar confirmaciones desde el service worker
+  // Cuando el usuario toca "✅ Confirmar" en la notificación push
+  listenForConfirmations(async (weekId) => {
+    toast('✅ Asignacion confirmada', 'Gracias por confirmar tu participacion')
+    // Aquí puedes agregar lógica futura: marcar en Supabase, etc.
+    // Ejemplo: await supabase.from('assignment_confirmations').upsert(...)
+  })
+
+  // Continuar con el flujo normal de la app
+  window.__onLogin(userData)
 }
 
 function switchTab(tab) {
