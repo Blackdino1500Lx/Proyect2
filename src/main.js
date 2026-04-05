@@ -169,14 +169,8 @@ async function loadMapPage(container) {
     window.__mapTab = t
     document.querySelectorAll('.mtt').forEach(b => b.classList.remove('active'))
     document.getElementById('maptab-' + t)?.classList.add('active')
-    if (t === 'field') await renderField(tabContent, CU)
-    if (t === 'report') tabContent.innerHTML = `
-      <div class="card" style="text-align:center;padding:2.5rem 1.5rem">
-        <div style="font-size:2.5rem;margin-bottom:1rem">🚧</div>
-        <div style="font-weight:700;font-size:1rem;color:var(--text);margin-bottom:.5rem">Función deshabilitada</div>
-        <p style="font-size:.85rem;color:var(--text2);margin-bottom:1.2rem">Esta sección está temporalmente fuera de servicio.</p>
-        <div style="font-size:.78rem;color:var(--text3)">Para más información contactá al desarrollador.</div>
-      </div>`
+    if (t === 'field')  await renderField(tabContent, CU)
+    if (t === 'report') await loadReports(tabContent)
   }
 
   document.getElementById('maptab-field')?.addEventListener('click',  () => switchTab('field'))
@@ -390,6 +384,126 @@ async function loadMaint(container) {
       loadMaint(container)
     })
   })
+}
+
+// ── REPORTS ────────────────────────────────────────────────────
+async function loadReports(container) {
+  const isAdmin = CU?.role === 'admin'
+  const all  = await get('reports')
+  const mine = all.filter(r => r.email === CU?.email && r.year === NOW.getFullYear())
+
+  container.innerHTML = `<div class="page active" id="page-reports">
+    <div class="section-hd"><h2 class="section-title">Informes de Predicación</h2></div>
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Mi informe mensual</span>
+        <select id="report-month-sel" class="btn-sm">
+          ${MONTHS.map((m,i) => `<option value="${i}" ${i===NOW.getMonth()?'selected':''}>${m} ${NOW.getFullYear()}</option>`).join('')}
+        </select>
+      </div>
+      <div class="g2" style="margin-bottom:.9rem">
+        <div class="fg"><label>Horas</label><input type="number" id="rp-hours" min="0" placeholder="0"/></div>
+        <div class="fg"><label>Revisitas</label><input type="number" id="rp-rv" min="0" placeholder="0"/></div>
+        <div class="fg"><label>Estudios bíblicos</label><input type="number" id="rp-studies" min="0" placeholder="0"/></div>
+        <div class="fg"><label>Videos</label><input type="number" id="rp-videos" min="0" placeholder="0"/></div>
+      </div>
+      <div class="fg"><label>Comentarios</label><textarea id="rp-notes" placeholder="Observaciones..."></textarea></div>
+      <button class="btn-action" id="btn-save-report">Guardar informe</button>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Mi historial ${NOW.getFullYear()}</span>
+        <div class="year-ring"><div class="num">${mine.length}</div><div class="lbl">informes</div></div>
+      </div>
+      <div class="month-grid">
+        ${MONTHS.map((m, i) => {
+          const rep = mine.find(r => r.month === i)
+          return `<div class="month-cell ${rep ? 'has-report' : ''}" title="${rep ? `Horas: ${rep.hours}` : 'Sin informe'}">
+            <div class="mc-name">${m.slice(0,3)}</div>
+            <div class="mc-status">${rep ? '✅' : '○'}</div>
+          </div>`
+        }).join('')}
+      </div>
+    </div>
+    ${isAdmin ? `<div id="admin-reports-section"></div>` : ''}
+  </div>`
+
+  const selEl = document.getElementById('report-month-sel')
+  const fillForm = () => {
+    const selMonth = parseInt(selEl.value)
+    const existing = all.find(r => r.email === CU?.email && r.year === NOW.getFullYear() && r.month === selMonth)
+    document.getElementById('rp-hours').value   = existing?.hours    || ''
+    document.getElementById('rp-rv').value      = existing?.revisits || ''
+    document.getElementById('rp-studies').value = existing?.studies  || ''
+    document.getElementById('rp-videos').value  = existing?.videos   || ''
+    document.getElementById('rp-notes').value   = existing?.notes    || ''
+  }
+  fillForm()
+  selEl.addEventListener('change', fillForm)
+
+  document.getElementById('btn-save-report').addEventListener('click', async () => {
+    const month    = parseInt(selEl.value)
+    const hours    = parseInt(document.getElementById('rp-hours').value)    || 0
+    const revisits = parseInt(document.getElementById('rp-rv').value)       || 0
+    const studies  = parseInt(document.getElementById('rp-studies').value)  || 0
+    const videos   = parseInt(document.getElementById('rp-videos').value)   || 0
+    const notes    = document.getElementById('rp-notes').value.trim()
+    const year     = NOW.getFullYear()
+    await upsertReport({ email: CU.email, year, month, hours, revisits, studies, videos, notes }, { email: CU.email, year, month })
+    toast('Informe guardado', `${MONTHS[month]} ${year} · ${hours} horas`)
+    loadReports(container)
+  })
+
+  if (isAdmin) {
+    const adminSection = document.getElementById('admin-reports-section')
+    if (adminSection) await loadAdminReports(adminSection)
+  }
+}
+
+async function loadAdminReports(container) {
+  const reports   = await get('reports')
+  const users     = await getUsers()
+  const groups    = await getGroups()
+  const year      = NOW.getFullYear()
+  const month     = NOW.getMonth()
+  const yearReps  = reports.filter(r => r.year === year)
+  const monthReps = reports.filter(r => r.year === year && r.month === month)
+
+  container.innerHTML = `
+    <div class="card" style="margin-top:.5rem">
+      <div class="card-hd"><span class="card-title">Informes de la congregación — ${MONTHS[month]} ${year}</span></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Publicador</th><th>Grupo</th><th>Horas</th><th>Revisitas</th><th>Estudios</th><th>Videos</th><th>Estado</th></tr></thead>
+          <tbody>
+            ${users.map(u => {
+              const rep = monthReps.find(r => r.email === u.email)
+              const grp = groups.find(g => g.id === u.group_id)
+              return `<tr>
+                <td><strong>${u.name || '—'}</strong></td>
+                <td>${grp ? `<span class="group-pill">${grp.name}</span>` : '—'}</td>
+                <td>${rep ? rep.hours    : '—'}</td>
+                <td>${rep ? rep.revisits : '—'}</td>
+                <td>${rep ? rep.studies  : '—'}</td>
+                <td>${rep ? rep.videos   : '—'}</td>
+                <td>${rep ? '<span class="badge b-green">✓ Enviado</span>' : '<span class="badge b-rose">Pendiente</span>'}</td>
+              </tr>`
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Resumen anual ${year}</span></div>
+      <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap">
+        <div class="year-ring"><div class="num">${yearReps.length}</div><div class="lbl">informes</div></div>
+        <div class="g3" style="flex:1">
+          <div class="stat"><div class="stat-icon">⏱</div><div><div class="stat-val">${yearReps.reduce((s,r)=>s+(r.hours||0),0)}</div><div class="stat-lbl">Horas totales</div></div></div>
+          <div class="stat"><div class="stat-icon"></div><div><div class="stat-val">${yearReps.reduce((s,r)=>s+(r.studies||0),0)}</div><div class="stat-lbl">Estudios</div></div></div>
+          <div class="stat"><div class="stat-icon"></div><div><div class="stat-val">${yearReps.reduce((s,r)=>s+(r.revisits||0),0)}</div><div class="stat-lbl">Revisitas</div></div></div>
+        </div>
+      </div>
+    </div>`
 }
 
 // ── ADMIN ──────────────────────────────────────────────────────
