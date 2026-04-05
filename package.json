@@ -1,6 +1,6 @@
 {
   "name": "Pizarra-Digital",
-  "version": "2.1.0",
+  "version": "5.0.0",
   "description": "Sistema digital de congregación Vista Grande",
   "scripts": {
     "build": "mkdir -p dist && cp index.html dist/ && cp -r src dist/ && cp -r public/* dist/",
