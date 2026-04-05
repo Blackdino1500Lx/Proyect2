@@ -45,8 +45,7 @@ window.__onLogin = async function(userData) {
   document.getElementById('app').style.display = 'flex'
   renderShell(userData)
   await loadPage('dash')
-  // Ofrecer biometría si no está activada
-  offerBiometricSetup(userData)
+
 }
 
 // ── 5. Page loader ─────────────────────────────────────────────
