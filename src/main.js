@@ -142,7 +142,7 @@ async function loadMapPage(container) {
     const { data } = await supabase
       .from('app_settings')
       .select('value')
-      .eq('key', 'field_module_enabled')
+      .eq('key', 'report_enabled')
       .single()
     if (data) reportEnabled = data.value === 'true'
   } catch {}
