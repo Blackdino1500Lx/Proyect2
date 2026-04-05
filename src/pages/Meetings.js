@@ -146,6 +146,139 @@ function getMonthFromRange(dr) {
   return ''
 }
 
+// ── Genera el contenido HTML del programa para imprimir/PDF ────
+function buildPrintableProgram(week, users) {
+  const typeLabels = { talk:'Discurso', reading:'Lectura', demo:'Demostracion', discussion:'Analisis', study:'Estudio' }
+  const secColors  = { 'TESOROS DE LA BIBLIA':'#c07820', 'SEAMOS MEJORES MAESTROS':'#2e9e6b', 'NUESTRA VIDA CRISTIANA':'#4a90d9' }
+  const roles = week.roles || {}
+  const asgn  = week.assignments || {}
+
+  const sectionsHTML = (week.sections || []).map(function(sec) {
+    const color = secColors[sec.name] || '#4a90d9'
+    const isMMT = sec.name === 'SEAMOS MEJORES MAESTROS'
+
+    const items = (sec.items || []).map(function(item) {
+      const isStudy = item.type === 'study'
+      const aKey = 'item_' + item.number
+      const hKey = 'help_' + item.number
+      const cKey = 'conduct_' + item.number
+      const rKey = 'reader_' + item.number
+
+      let assignLine = ''
+      if (isStudy) {
+        const conductor = asgn[cKey] || '—'
+        const lector    = asgn[rKey] || '—'
+        assignLine = `<div style="font-size:9pt;color:#555;margin-top:2px">Conductor: <b>${conductor}</b> · Lector: <b>${lector}</b></div>`
+      } else if (isMMT) {
+        const asignado = asgn[aKey] || '—'
+        const ayudante = asgn[hKey] || '—'
+        assignLine = `<div style="font-size:9pt;color:#555;margin-top:2px">Estudiante: <b>${asignado}</b> · Ayudante: <b>${ayudante}</b></div>`
+      } else {
+        assignLine = `<div style="font-size:9pt;color:#555;margin-top:2px">Asignado: <b>${asgn[aKey] || '—'}</b></div>`
+      }
+
+      return `<tr>
+        <td style="width:22px;text-align:center;padding:4px 2px;vertical-align:top">
+          <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${color}22;color:${color};font-size:7pt;font-weight:700;line-height:16px;text-align:center">${item.number}</span>
+        </td>
+        <td style="padding:4px 4px;vertical-align:top">
+          <div style="font-size:9.5pt;font-weight:600;color:#222;line-height:1.3">${item.title}</div>
+          <div style="font-size:8pt;color:#888">${typeLabels[item.type] || item.type} · ${item.duration} min.</div>
+          ${assignLine}
+        </td>
+      </tr>`
+    }).join('')
+
+    return `<div style="margin-bottom:10px">
+      <div style="background:${color};color:white;padding:3px 8px;border-radius:4px;font-size:8pt;font-weight:700;letter-spacing:.04em;margin-bottom:4px">${sec.icon} ${sec.name}</div>
+      <table style="width:100%;border-collapse:collapse">${items}</table>
+    </div>`
+  }).join('')
+
+  return `
+    <div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;padding:16px;color:#222">
+      <!-- Cabecera -->
+      <div style="text-align:center;border-bottom:2px solid #4a90d9;padding-bottom:8px;margin-bottom:12px">
+        <div style="font-size:8pt;color:#888;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Congregación Vista Grande</div>
+        <div style="font-size:14pt;font-weight:700;color:#1a1a2e;margin:2px 0">${week.dateRange}</div>
+        <div style="font-size:9pt;color:#555">${week.bibleReading || ''}</div>
+      </div>
+
+      <!-- Apertura -->
+      <div style="background:#f0f7ff;border-radius:6px;padding:7px 10px;margin-bottom:10px;border:1px solid #d0e4f7">
+        <div style="font-size:8.5pt;color:#4a90d9;font-weight:700;margin-bottom:4px">APERTURA · Canción ${week.openingSong || ''}</div>
+        <div style="font-size:9pt;display:flex;gap:20px;flex-wrap:wrap">
+          <span>Presidente: <b>${roles['presidente'] || '—'}</b></span>
+          <span>Oración: <b>${roles['oracion_apertura'] || '—'}</b></span>
+        </div>
+      </div>
+
+      <!-- Secciones -->
+      ${sectionsHTML}
+
+      <!-- Cierre -->
+      <div style="background:#f0f7ff;border-radius:6px;padding:7px 10px;margin-top:8px;border:1px solid #d0e4f7">
+        <div style="font-size:8.5pt;color:#4a90d9;font-weight:700;margin-bottom:4px">CIERRE · Canción ${week.midSong || ''} → ${week.closingSong || ''}</div>
+        <div style="font-size:9pt">Oración de cierre: <b>${roles['oracion_cierre'] || '—'}</b></div>
+      </div>
+
+      <!-- Pie -->
+      <div style="text-align:center;margin-top:14px;font-size:7.5pt;color:#aaa;border-top:1px solid #eee;padding-top:6px">
+        Pizarra Digital · Congregación Vista Grande
+      </div>
+    </div>
+  `
+}
+
+// ── Descarga PDF de un programa usando jsPDF + html2canvas ────
+async function downloadWeekPDF(week, users) {
+  // Cargar librerías si no están cargadas
+  if (!window.html2canvas) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script')
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
+      s.onload = res; s.onerror = rej
+      document.head.appendChild(s)
+    })
+  }
+  if (!window.jspdf) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script')
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+      s.onload = res; s.onerror = rej
+      document.head.appendChild(s)
+    })
+  }
+
+  // Contenedor temporal invisible
+  const wrap = document.createElement('div')
+  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:620px;background:#fff;z-index:-1'
+  wrap.innerHTML = buildPrintableProgram(week, users)
+  document.body.appendChild(wrap)
+
+  try {
+    const canvas = await window.html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+    const imgData = canvas.toDataURL('image/png')
+    const { jsPDF } = window.jspdf
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageW = pdf.internal.pageSize.getWidth()
+    const pageH = pdf.internal.pageSize.getHeight()
+    const imgH = (canvas.height * pageW) / canvas.width
+    let yPos = 0
+    let remaining = imgH
+    while (remaining > 0) {
+      if (yPos > 0) pdf.addPage()
+      pdf.addImage(imgData, 'PNG', 0, -yPos, pageW, imgH)
+      yPos += pageH
+      remaining -= pageH
+    }
+    const filename = `programa-${week.dateRange.replace(/\s/g,'-').toLowerCase()}.pdf`
+    pdf.save(filename)
+  } finally {
+    document.body.removeChild(wrap)
+  }
+}
+
 function buildWeekCard(week, index, isAdmin, users) {
   const typeLabels = { talk:'Discurso', reading:'Lectura', demo:'Demostracion', discussion:'Analisis', study:'Estudio' }
   const typeBadges = { talk:'b-amber', reading:'b-sky', demo:'b-green', discussion:'b-gray', study:'b-sky' }
@@ -224,6 +357,11 @@ function buildWeekCard(week, index, isAdmin, users) {
     ? `<button class="btn-action btn-save-week" data-week-id="${week.id}" style="width:100%;margin-top:.9rem">Guardar asignaciones</button>`
     : ''
 
+  // Botón PDF — visible para todos
+  const pdfBtn = `<button class="btn-sm btn-download-pdf" data-week-id="${week.id}" style="width:100%;margin-top:.5rem;background:var(--rose-bg);color:var(--rose);border-color:var(--rose);display:flex;align-items:center;justify-content:center;gap:.4rem">
+    &#128196; Descargar programa PDF
+  </button>`
+
   return `<div class="meet-accordion" id="week-${week.id}">
     <div class="meet-accordion-hd" data-week="${week.id}">
       <div class="meet-date">
@@ -254,6 +392,7 @@ function buildWeekCard(week, index, isAdmin, users) {
           <div style="font-size:.7rem;color:var(--text3);padding:.3rem 0 0">Cancion ${week.closingSong || ''} · Palabras de conclusion</div>
         </div>
         ${saveBtn}
+        ${pdfBtn}
       </div>
     </div>
   </div>`
@@ -270,6 +409,28 @@ function attachEvents(container, isAdmin, weeks, currentUser, users) {
 
   container.querySelectorAll('select').forEach(function(sel) {
     sel.addEventListener('click', function(e) { e.stopPropagation() })
+  })
+
+  // ── Botón Descargar PDF ──
+  container.querySelectorAll('.btn-download-pdf').forEach(function(btn) {
+    btn.addEventListener('click', async function(e) {
+      e.stopPropagation()
+      const weekId = btn.dataset.weekId
+      const week = weeks.find(w => w.id === weekId)
+      if (!week) return
+      const orig = btn.innerHTML
+      btn.innerHTML = '⏳ Generando PDF...'
+      btn.disabled = true
+      try {
+        await downloadWeekPDF(week, users)
+        toast('PDF listo', week.dateRange)
+      } catch(err) {
+        console.error(err)
+        toast('Error', 'No se pudo generar el PDF', true)
+      }
+      btn.innerHTML = orig
+      btn.disabled = false
+    })
   })
 
   if (!isAdmin) return
