@@ -12,11 +12,7 @@ async function fetchUsers() {
 }
 
 function makeSelect(cls, weekId, dataAttr, dataVal, value, users, filter) {
-  const f = filter
-  const list = f === 'baptized_brother' ? users.filter(u => u.baptized && u.gender !== 'sister')
-             : f === 'school'           ? users.filter(u => u.school)
-             : f === 'school_brother'   ? users.filter(u => u.school && u.gender !== 'sister')
-             : users
+  const list = users
   const opts = '<option value="">— Seleccionar —</option>' +
     list.map(u => `<option value="${u.name}"${value === u.name ? ' selected' : ''}>${u.name}</option>`).join('')
   return `<select class="${cls}" data-week="${weekId}" ${dataAttr}="${dataVal}" style="flex:1;min-width:110px;padding:.28rem .5rem;font-size:.75rem;border:1px solid var(--border2);border-radius:6px;background:var(--off);color:var(--text);outline:none;font-family:var(--sans)">${opts}</select>`
