@@ -7,10 +7,7 @@ import {
   registerPasskey,
   authenticateWithPasskey
 } from '../services/biometric.js'
-import {
-  subscribeToPush,
-  listenForConfirmations
-} from '../services/notifications.js'
+import { initPushForUser } from '../services/notifications.js'
 
 let bioAvailable = false
 
@@ -106,7 +103,6 @@ export async function renderAuth() {
     try {
       const userData = await login(email, pass)
       await onLoginSuccess(userData)
-      // Ofrecer biometría si está disponible y no está configurada
       if (bioAvailable && !localStorage.getItem('pizarra_passkey_id')) {
         offerBiometricSetup(userData.id, userData.name || userData.email)
       }
@@ -150,22 +146,14 @@ export async function renderAuth() {
   })
 }
 
-// ── Post-login: push + confirmaciones ─────────────────────────
+// ── Post-login: push + continuar ──────────────────────────────
 async function onLoginSuccess(userData) {
-  // Suscribir a notificaciones push (pide permiso la primera vez)
+  // Suscribir a notificaciones push (pide permiso si es la primera vez)
   try {
-    await subscribeToPush(userData.id)
+    await initPushForUser(userData.id)
   } catch(e) {
-    console.warn('Push no disponible:', e)
+    console.warn('[Push] No disponible:', e)
   }
-
-  // Escuchar confirmaciones desde el service worker
-  // Cuando el usuario toca "✅ Confirmar" en la notificación push
-  listenForConfirmations(async (weekId) => {
-    toast('✅ Asignacion confirmada', 'Gracias por confirmar tu participacion')
-    // Aquí puedes agregar lógica futura: marcar en Supabase, etc.
-    // Ejemplo: await supabase.from('assignment_confirmations').upsert(...)
-  })
 
   // Continuar con el flujo normal de la app
   window.__onLogin(userData)
