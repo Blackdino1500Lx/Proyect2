@@ -74,18 +74,6 @@ export async function renderField(container, currentUser) {
   // Verificar si el módulo está habilitado
   const fieldEnabled = await getFieldEnabled()
 
-  // Si NO es admin y el módulo está deshabilitado, mostrar mensaje
-  if (!fieldEnabled && !isAdmin) {
-    container.innerHTML = `<div class="page active" id="page-field">
-      <div class="section-hd"><h2 class="section-title">Predicacion</h2></div>
-      <div class="empty" style="flex-direction:column;gap:.75rem;padding:2rem 1rem">
-        <span style="font-size:2rem">📋</span>
-        <p style="text-align:center;color:var(--text2);font-size:.9rem">El modulo de predicacion no esta disponible en este momento.</p>
-      </div>
-    </div>`
-    return
-  }
-
   const today = new Date().toISOString().split('T')[0]
   const weekStart = getWeekStart(today)
   const [territories, schedule, zoom, users] = await Promise.all([
