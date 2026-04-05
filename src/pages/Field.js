@@ -1,7 +1,7 @@
 import { toast } from '../utils/helpers.js'
 import { supabase } from '../config/supabase.js'
 
-const FIELD_ENABLED_KEY = 'field_module_enabled'
+const FIELD_ENABLED_KEY = 'report_enabled'
 
 // ── Configuración del módulo ──────────────────────────────────
 async function getFieldEnabled() {
@@ -191,8 +191,8 @@ export async function renderField(container, currentUser) {
     <div class="card" style="padding:.75rem 1rem;margin-bottom:1rem;border-color:${fieldEnabled ? 'var(--border2)' : '#f87171'};background:${fieldEnabled ? 'var(--off)' : '#fff1f1'}">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.75rem">
         <div>
-          <div style="font-size:.8rem;font-weight:700;color:var(--text)">Modulo de Predicacion</div>
-          <div style="font-size:.72rem;color:var(--text3)">Visible para todos los usuarios</div>
+          <div style="font-size:.8rem;font-weight:700;color:var(--text)">Seccion Mi Informe</div>
+          <div style="font-size:.72rem;color:var(--text3)">Muestra u oculta la tab 'Mi Informe' para todos</div>
         </div>
         <label class="field-toggle-label" style="position:relative;display:inline-flex;align-items:center;cursor:pointer;flex-shrink:0">
           <input type="checkbox" id="field-module-toggle" ${fieldEnabled ? 'checked' : ''} style="position:absolute;opacity:0;width:0;height:0"/>
@@ -262,7 +262,7 @@ export async function renderField(container, currentUser) {
 
       await setFieldEnabled(enabled)
       toast(enabled ? 'Modulo habilitado' : 'Modulo deshabilitado',
-            enabled ? 'Los usuarios pueden ver Predicacion' : 'Modulo oculto para usuarios')
+            enabled ? 'Tab Mi Informe visible para todos' : 'Tab Mi Informe oculta para usuarios')
     })
   }
 
