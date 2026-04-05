@@ -1,4 +1,4 @@
-const CACHE = 'pizarra-v6'
+const CACHE = 'pizarra-v7'
 
 // Archivos propios del app — se precargan al instalar
 const PRECACHE = [
