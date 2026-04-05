@@ -1,5 +1,6 @@
 import { toast } from '../utils/helpers.js'
 import { DEMO_MODE, supabase } from '../config/supabase.js'
+import { sendPushToUsers } from '../services/notifications.js'
 
 const LS_KEY = 'pizarra_meetings_v1'
 
@@ -89,6 +90,34 @@ async function extractPDFWithClaude(base64PDF) {
   return data
 }
 
+// ── Notificar usuarios asignados ──────────────────────────────
+async function notifyAssignedUsers(week, prevAssignments, prevRoles, users) {
+  if (DEMO_MODE) return
+
+  // Detectar nombres que cambiaron o son nuevos
+  const changedNames = new Set()
+  for (const [key, name] of Object.entries(week.assignments || {})) {
+    if (name && name !== prevAssignments[key]) changedNames.add(name)
+  }
+  for (const [key, name] of Object.entries(week.roles || {})) {
+    if (name && name !== prevRoles[key]) changedNames.add(name)
+  }
+
+  if (changedNames.size === 0) return
+
+  // Obtener IDs de esos usuarios
+  const assigned = users.filter(u => changedNames.has(u.name))
+  const userIds  = assigned.map(u => u.id)
+  if (userIds.length === 0) return
+
+  console.log('[Push] Notificando a:', [...changedNames])
+  await sendPushToUsers(userIds, {
+    title:   '📋 Nueva asignacion — Pizarra Digital',
+    message: 'Tienes una asignacion para la semana: ' + week.dateRange,
+    weekId:  week.id
+  })
+}
+
 // ── Render ────────────────────────────────────────────────────
 export async function renderMeetings(container, currentUser) {
   const isAdmin = currentUser?.role === 'admin'
@@ -122,6 +151,7 @@ function buildUploadCard(weeks) {
       <span class="card-title">Guia de Actividades</span>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
         ${weeks.length > 0 ? `<button class="btn-sm danger" id="btn-clear-meetings">Limpiar todo</button>` : ''}
+        ${weeks.length > 0 ? `<button class="btn-sm" id="btn-pdf-all" style="background:var(--rose-bg);color:var(--rose);border-color:var(--rose)">&#128196; PDF todas las semanas</button>` : ''}
         <label for="pdf-input" class="btn-action" style="cursor:pointer;padding:.5rem 1rem;font-size:.85rem">Subir PDF</label>
       </div>
     </div>
@@ -166,13 +196,9 @@ function buildPrintableProgram(week, users) {
 
       let assignLine = ''
       if (isStudy) {
-        const conductor = asgn[cKey] || '—'
-        const lector    = asgn[rKey] || '—'
-        assignLine = `<div style="font-size:9pt;color:#555;margin-top:2px">Conductor: <b>${conductor}</b> · Lector: <b>${lector}</b></div>`
+        assignLine = `<div style="font-size:9pt;color:#555;margin-top:2px">Conductor: <b>${asgn[cKey] || '—'}</b> · Lector: <b>${asgn[rKey] || '—'}</b></div>`
       } else if (isMMT) {
-        const asignado = asgn[aKey] || '—'
-        const ayudante = asgn[hKey] || '—'
-        assignLine = `<div style="font-size:9pt;color:#555;margin-top:2px">Estudiante: <b>${asignado}</b> · Ayudante: <b>${ayudante}</b></div>`
+        assignLine = `<div style="font-size:9pt;color:#555;margin-top:2px">Estudiante: <b>${asgn[aKey] || '—'}</b> · Ayudante: <b>${asgn[hKey] || '—'}</b></div>`
       } else {
         assignLine = `<div style="font-size:9pt;color:#555;margin-top:2px">Asignado: <b>${asgn[aKey] || '—'}</b></div>`
       }
@@ -197,14 +223,11 @@ function buildPrintableProgram(week, users) {
 
   return `
     <div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;padding:16px;color:#222">
-      <!-- Cabecera -->
       <div style="text-align:center;border-bottom:2px solid #4a90d9;padding-bottom:8px;margin-bottom:12px">
         <div style="font-size:8pt;color:#888;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Congregación Vista Grande</div>
         <div style="font-size:14pt;font-weight:700;color:#1a1a2e;margin:2px 0">${week.dateRange}</div>
         <div style="font-size:9pt;color:#555">${week.bibleReading || ''}</div>
       </div>
-
-      <!-- Apertura -->
       <div style="background:#f0f7ff;border-radius:6px;padding:7px 10px;margin-bottom:10px;border:1px solid #d0e4f7">
         <div style="font-size:8.5pt;color:#4a90d9;font-weight:700;margin-bottom:4px">APERTURA · Canción ${week.openingSong || ''}</div>
         <div style="font-size:9pt;display:flex;gap:20px;flex-wrap:wrap">
@@ -212,17 +235,11 @@ function buildPrintableProgram(week, users) {
           <span>Oración: <b>${roles['oracion_apertura'] || '—'}</b></span>
         </div>
       </div>
-
-      <!-- Secciones -->
       ${sectionsHTML}
-
-      <!-- Cierre -->
       <div style="background:#f0f7ff;border-radius:6px;padding:7px 10px;margin-top:8px;border:1px solid #d0e4f7">
         <div style="font-size:8.5pt;color:#4a90d9;font-weight:700;margin-bottom:4px">CIERRE · Canción ${week.midSong || ''} → ${week.closingSong || ''}</div>
         <div style="font-size:9pt">Oración de cierre: <b>${roles['oracion_cierre'] || '—'}</b></div>
       </div>
-
-      <!-- Pie -->
       <div style="text-align:center;margin-top:14px;font-size:7.5pt;color:#aaa;border-top:1px solid #eee;padding-top:6px">
         Pizarra Digital · Congregación Vista Grande
       </div>
@@ -230,9 +247,8 @@ function buildPrintableProgram(week, users) {
   `
 }
 
-// ── Descarga PDF de un programa usando jsPDF + html2canvas ────
+// ── Descarga PDF ───────────────────────────────────────────────
 async function downloadWeekPDF(week, users) {
-  // Cargar librerías si no están cargadas
   if (!window.html2canvas) {
     await new Promise((res, rej) => {
       const s = document.createElement('script')
@@ -250,7 +266,6 @@ async function downloadWeekPDF(week, users) {
     })
   }
 
-  // Contenedor temporal invisible
   const wrap = document.createElement('div')
   wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:620px;background:#fff;z-index:-1'
   wrap.innerHTML = buildPrintableProgram(week, users)
@@ -272,11 +287,71 @@ async function downloadWeekPDF(week, users) {
       yPos += pageH
       remaining -= pageH
     }
-    const filename = `programa-${week.dateRange.replace(/\s/g,'-').toLowerCase()}.pdf`
-    pdf.save(filename)
+    pdf.save(`programa-${week.dateRange.replace(/\s/g,'-').toLowerCase()}.pdf`)
   } finally {
     document.body.removeChild(wrap)
   }
+}
+
+// ── Descarga PDF de TODAS las semanas en un solo archivo ──────
+async function downloadAllWeeksPDF(weeks, users) {
+  if (!weeks.length) return
+
+  if (!window.html2canvas) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script')
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
+      s.onload = res; s.onerror = rej
+      document.head.appendChild(s)
+    })
+  }
+  if (!window.jspdf) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script')
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+      s.onload = res; s.onerror = rej
+      document.head.appendChild(s)
+    })
+  }
+
+  const { jsPDF } = window.jspdf
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const pageW = pdf.internal.pageSize.getWidth()
+  const pageH = pdf.internal.pageSize.getHeight()
+
+  for (let i = 0; i < weeks.length; i++) {
+    const week = weeks[i]
+
+    const wrap = document.createElement('div')
+    wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:620px;background:#fff;z-index:-1'
+    wrap.innerHTML = buildPrintableProgram(week, users)
+    document.body.appendChild(wrap)
+
+    try {
+      const canvas = await window.html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const imgData = canvas.toDataURL('image/png')
+      const imgH = (canvas.height * pageW) / canvas.width
+
+      // Si no es la primera semana, agregar nueva página antes
+      if (i > 0) pdf.addPage()
+
+      let yPos = 0
+      let remaining = imgH
+      let firstChunk = true
+      while (remaining > 0) {
+        if (!firstChunk) pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, -yPos, pageW, imgH)
+        yPos += pageH
+        remaining -= pageH
+        firstChunk = false
+      }
+    } finally {
+      document.body.removeChild(wrap)
+    }
+  }
+
+  const fecha = new Date().toISOString().split('T')[0]
+  pdf.save(`programas-todas-semanas-${fecha}.pdf`)
 }
 
 function buildWeekCard(week, index, isAdmin, users) {
@@ -357,7 +432,6 @@ function buildWeekCard(week, index, isAdmin, users) {
     ? `<button class="btn-action btn-save-week" data-week-id="${week.id}" style="width:100%;margin-top:.9rem">Guardar asignaciones</button>`
     : ''
 
-  // Botón PDF — visible para todos
   const pdfBtn = `<button class="btn-sm btn-download-pdf" data-week-id="${week.id}" style="width:100%;margin-top:.5rem;background:var(--rose-bg);color:var(--rose);border-color:var(--rose);display:flex;align-items:center;justify-content:center;gap:.4rem">
     &#128196; Descargar programa PDF
   </button>`
@@ -415,8 +489,7 @@ function attachEvents(container, isAdmin, weeks, currentUser, users) {
   container.querySelectorAll('.btn-download-pdf').forEach(function(btn) {
     btn.addEventListener('click', async function(e) {
       e.stopPropagation()
-      const weekId = btn.dataset.weekId
-      const week = weeks.find(w => w.id === weekId)
+      const week = weeks.find(w => w.id === btn.dataset.weekId)
       if (!week) return
       const orig = btn.innerHTML
       btn.innerHTML = '⏳ Generando PDF...'
@@ -435,13 +508,29 @@ function attachEvents(container, isAdmin, weeks, currentUser, users) {
 
   if (!isAdmin) return
 
-  container.querySelector('#pdf-input') && container.querySelector('#pdf-input').addEventListener('change', async function(e) {
-    const file = e.target.files && e.target.files[0]
+  container.querySelector('#pdf-input')?.addEventListener('change', async function(e) {
+    const file = e.target.files?.[0]
     if (!file) return
     await processPDF(file, container, currentUser, weeks)
   })
 
-  container.querySelector('#btn-clear-meetings') && container.querySelector('#btn-clear-meetings').addEventListener('click', async function() {
+  container.querySelector('#btn-pdf-all')?.addEventListener('click', async function() {
+    const btn = container.querySelector('#btn-pdf-all')
+    const orig = btn.innerHTML
+    btn.innerHTML = '⏳ Generando PDF...'
+    btn.disabled = true
+    try {
+      await downloadAllWeeksPDF(weeks, users)
+      toast('PDF listo', weeks.length + ' semanas descargadas')
+    } catch(err) {
+      console.error(err)
+      toast('Error', 'No se pudo generar el PDF', true)
+    }
+    btn.innerHTML = orig
+    btn.disabled = false
+  })
+
+  container.querySelector('#btn-clear-meetings')?.addEventListener('click', async function() {
     if (!confirm('Eliminar todas las semanas?')) return
     if (DEMO_MODE) {
       localStorage.removeItem(LS_KEY)
@@ -458,27 +547,32 @@ function attachEvents(container, isAdmin, weeks, currentUser, users) {
     btn.addEventListener('click', async function(e) {
       e.stopPropagation()
       if (!confirm('Eliminar esta semana?')) return
-      const week = weeks.find(function(w) { return w.id === btn.dataset.delWeek })
+      const week = weeks.find(w => w.id === btn.dataset.delWeek)
       if (week) await deleteWeek(week)
       toast('Eliminado', 'Semana eliminada')
       await renderMeetings(container, currentUser)
     })
   })
 
+  // ── Guardar asignaciones + notificar push ──────────────────
   container.querySelectorAll('.btn-save-week').forEach(function(btn) {
     btn.addEventListener('click', async function(e) {
       e.stopPropagation()
       const weekId = btn.dataset.weekId
-      const week = weeks.find(function(w) { return w.id === weekId })
+      const week = weeks.find(w => w.id === weekId)
       if (!week) return
+
+      // Guardar estado anterior para detectar cambios
+      const prevAssignments = { ...week.assignments }
+      const prevRoles       = { ...week.roles }
 
       week.assignments = {}
       week.roles = {}
 
-      container.querySelectorAll('.assign-input[data-week="' + weekId + '"]').forEach(function(inp) {
+      container.querySelectorAll(`.assign-input[data-week="${weekId}"]`).forEach(function(inp) {
         week.assignments[inp.dataset.key] = inp.value
       })
-      container.querySelectorAll('.role-input[data-week="' + weekId + '"]').forEach(function(inp) {
+      container.querySelectorAll(`.role-input[data-week="${weekId}"]`).forEach(function(inp) {
         week.roles[inp.dataset.role] = inp.value
       })
 
@@ -487,6 +581,8 @@ function attachEvents(container, isAdmin, weeks, currentUser, users) {
       try {
         await saveWeekAssignments(week)
         toast('Guardado!', week.dateRange)
+        // Notificar push a usuarios asignados nuevos o modificados
+        await notifyAssignedUsers(week, prevAssignments, prevRoles, users)
       } catch(err) {
         toast('Error', err.message, true)
       }
@@ -497,9 +593,9 @@ function attachEvents(container, isAdmin, weeks, currentUser, users) {
 }
 
 async function processPDF(file, container, currentUser, existingWeeks) {
-  const prog = container.querySelector('#pdf-progress')
+  const prog   = container.querySelector('#pdf-progress')
   const pTitle = container.querySelector('#prog-title')
-  const pDesc = container.querySelector('#prog-desc')
+  const pDesc  = container.querySelector('#prog-desc')
 
   if (prog) prog.style.display = 'block'
   if (pTitle) pTitle.textContent = 'Leyendo el PDF...'
@@ -517,14 +613,14 @@ async function processPDF(file, container, currentUser, existingWeeks) {
     if (pDesc) pDesc.textContent = 'Claude esta extrayendo las semanas (15-25 seg.)'
 
     const result = await extractPDFWithClaude(base64)
-    if (!result || !result.weeks || !result.weeks.length) throw new Error('No se encontraron semanas en el PDF')
+    if (!result?.weeks?.length) throw new Error('No se encontraron semanas en el PDF')
 
     result.weeks.forEach(function(nw) {
       nw.id = nw.dateRange.replace(/\s/g, '-').toLowerCase()
-      const old = existingWeeks.find(function(w) { return w.dateRange === nw.dateRange })
-      nw.assignments = old && old.assignments ? old.assignments : {}
-      nw.roles = old && old.roles ? old.roles : {}
-      if (old && old.supabase_id) nw.supabase_id = old.supabase_id
+      const old = existingWeeks.find(w => w.dateRange === nw.dateRange)
+      nw.assignments = old?.assignments || {}
+      nw.roles       = old?.roles       || {}
+      if (old?.supabase_id) nw.supabase_id = old.supabase_id
     })
 
     await saveWeeks(result.weeks)
