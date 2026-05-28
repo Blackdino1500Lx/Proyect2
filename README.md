@@ -1,8 +1,8 @@
-# Kharis – Congregación Vista Grande
+#  Congregación Vista Grande
 
 ## Estructura del proyecto
 ```
-kharis-final/
+Pizarra/
 ├── index.html                     ← Entry point HTML
 ├── vite.config.js                 ← Configuración de Vite
 ├── package.json                   ← Dependencias
