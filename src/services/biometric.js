@@ -58,7 +58,7 @@ export async function registerPasskey(userId, userName) {
         ],
         authenticatorSelection: {
           authenticatorAttachment: 'platform',
-          userVerification: 'required',
+          userVerification: 'preferred', // permite completar con PIN/patrón si la huella no lee
           residentKey: 'preferred',
         },
         timeout: 60000,
@@ -124,7 +124,7 @@ export async function authenticateWithPasskey() {
       publicKey: {
         challenge,
         rpId: RP_ID,
-        userVerification: 'required',
+        userVerification: 'preferred', // permite PIN/patrón si la huella no lee
         timeout: 60000,
         allowCredentials: [{
           id:         base64ToBuffer(savedCredId),
