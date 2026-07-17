@@ -166,6 +166,16 @@ function switchTab(tab) {
   document.getElementById('tab-reg').classList.toggle('active',   tab === 'register')
 }
 
+// Diagnóstico: qué considera el navegador sobre el contexto seguro
+function diagInfo() {
+  return '— diagnóstico —' +
+    '\nsecureContext: ' + window.isSecureContext +
+    '\norigin: ' + location.origin +
+    '\nhost: ' + location.hostname +
+    '\nin-iframe: ' + (window.top !== window.self) +
+    '\nplatformAuth: ' + (window.PublicKeyCredential ? 'sí' : 'no')
+}
+
 async function offerBiometricSetup(userId, userName) {
   setTimeout(async () => {
     const confirmed = confirm(
@@ -180,11 +190,11 @@ async function offerBiometricSetup(userId, userName) {
         toast('¡Listo!', 'Acceso biométrico activado 👆')
       } else {
         // alert() para poder leer el error completo en el celular
-        alert('No se pudo activar la huella:\n\n' + (result.error || 'Error desconocido'))
+        alert('No se pudo activar la huella:\n\n' + (result.error || 'Error desconocido') + '\n\n' + diagInfo())
         toast('No se pudo activar', result.error || 'Intenta de nuevo', true)
       }
     } catch(e) {
-      alert('Error al activar la huella:\n\n' + e.message)
+      alert('Error al activar la huella:\n\n' + e.message + '\n\n' + diagInfo())
       toast('Error', e.message, true)
     }
   }, 1200)
