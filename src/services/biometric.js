@@ -79,6 +79,18 @@ export async function registerPasskey(userId, userName) {
       publicKey = bufferToBase64(credential.response.attestationObject)
     }
 
+    // Asegurar que el perfil del usuario exista antes de guardar la passkey.
+    // passkeys.user_id apunta a pizarra.users; si no hay fila, falla la FK.
+    try {
+      const { data: au } = await supabase.auth.getUser()
+      if (au?.user) {
+        await supabase.from('users').upsert(
+          { id: au.user.id, email: au.user.email, name: userName || au.user.user_metadata?.name || '' },
+          { onConflict: 'id' }
+        )
+      }
+    } catch (_) { /* no bloquear el registro de la huella por esto */ }
+
     const { error } = await supabase.from('passkeys').insert({
       user_id:       userId,
       credential_id: credentialId,

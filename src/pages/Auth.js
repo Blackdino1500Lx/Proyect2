@@ -69,9 +69,9 @@ export async function renderAuth() {
       const userId = result.userId || result.user_id
       if (!userId) throw new Error('No se pudo identificar el usuario')
       const { data: profile } = await supabase
-        .from('users').select('*, groups(*)').eq('id', userId).single()
+        .from('users').select('*, groups(*)').eq('id', userId).maybeSingle()
       if (!profile) throw new Error('Perfil no encontrado')
-      await onLoginSuccess({ ...profile, group: profile.groups })
+      await onLoginSuccess({ ...profile, group: profile.groups || null })
     } catch(e) {
       toast('Error', e.message, true)
       btn.disabled = false
@@ -179,9 +179,12 @@ async function offerBiometricSetup(userId, userName) {
         localStorage.setItem('pizarra_passkey_user', userId)
         toast('¡Listo!', 'Acceso biométrico activado 👆')
       } else {
+        // alert() para poder leer el error completo en el celular
+        alert('No se pudo activar la huella:\n\n' + (result.error || 'Error desconocido'))
         toast('No se pudo activar', result.error || 'Intenta de nuevo', true)
       }
     } catch(e) {
+      alert('Error al activar la huella:\n\n' + e.message)
       toast('Error', e.message, true)
     }
   }, 1200)

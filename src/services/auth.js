@@ -20,9 +20,26 @@ export async function login(email, password) {
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw error
-  const { data: profile } = await supabase
-    .from('users').select('*, groups(*)').eq('id', data.user.id).single()
-  return { ...profile, group: profile.groups }
+
+  // maybeSingle() evita el 406 cuando todavía no existe la fila del perfil
+  let { data: profile } = await supabase
+    .from('users').select('*, groups(*)').eq('id', data.user.id).maybeSingle()
+
+  // Si el perfil no existe (p.ej. el trigger no lo creó), lo creamos ahora
+  // que ya hay sesión activa y volvemos a leerlo.
+  if (!profile) {
+    await supabase.from('users').upsert(
+      { id: data.user.id, email: data.user.email,
+        name: data.user.user_metadata?.name || '', role: 'user' },
+      { onConflict: 'id' }
+    )
+    const res = await supabase
+      .from('users').select('*, groups(*)').eq('id', data.user.id).maybeSingle()
+    profile = res.data
+  }
+
+  if (!profile) profile = { id: data.user.id, email: data.user.email, role: 'user', groups: null }
+  return { ...profile, group: profile.groups || null }
 }
 
 export async function register(name, email, password) {
