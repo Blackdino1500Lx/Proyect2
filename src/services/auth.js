@@ -39,11 +39,16 @@ export async function register(name, email, password) {
     email, password, options: { data: { name } }
   })
   if (error) throw error
-  // Upsert por si el trigger ya creó el perfil sin nombre
-  await supabase.from('users').upsert(
-    { id: data.user.id, name, email, role: 'user' },
-    { onConflict: 'id' }
-  )
+  // El perfil lo crea automáticamente el trigger handle_new_user (incluye el nombre).
+  // Solo actualizamos desde el cliente si YA hay sesión activa (cuando la
+  // confirmación por correo está desactivada). Si no hay sesión, evitamos el 401
+  // que provoca escribir en 'users' sin estar autenticado.
+  if (data.session) {
+    await supabase.from('users').upsert(
+      { id: data.user.id, name, email, role: 'user' },
+      { onConflict: 'id' }
+    )
+  }
 }
 
 export async function logout() {
